@@ -51,6 +51,8 @@ check. Short target/session tests passed on 0.0.9; long-duration recovery/soak
 remain open. See [hardware acceptance](docs/bp6013_compatibility_review.md).
 GitHub repository: [`raunosr/ha-balboa-rs485`](https://github.com/raunosr/ha-balboa-rs485).
 See [contribution rules](CONTRIBUTING.md) and [security reporting](SECURITY.md).
+Released under the [MIT License](LICENSE). Independent community software;
+not affiliated with or endorsed by Balboa Water Group or Home Assistant.
 
 For the Phase 2 loopback lab, add `--transport-lab` to the simulator and use
 `--transport --mode classic-rs485 --duration 15` in the smoke client. This only

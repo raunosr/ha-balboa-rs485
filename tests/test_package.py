@@ -53,6 +53,10 @@ def test_install_zip_is_self_contained_reproducible_and_excludes_development_fil
         assert "custom_components/balboa_rs485/_core/runtime.py" in names
         assert "custom_components/balboa_rs485/brand/icon.png" in names
         assert "custom_components/balboa_rs485/services.yaml" in names
+        assert (
+            archive.read("custom_components/balboa_rs485/LICENSE")
+            == (root / "LICENSE").read_bytes()
+        )
         # Pin ZIP creator metadata too: Windows/Linux builds must not differ.
         assert all(info.create_system == 3 for info in archive.infolist())
         assert all(name.startswith("custom_components/balboa_rs485/") for name in names)

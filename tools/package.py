@@ -36,7 +36,9 @@ def build_zip(root: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(component.rglob("*")):
-            if path.is_file() and path.suffix in (".py", ".json", ".png", ".yaml"):
+            if path.is_file() and (
+                path.suffix in (".py", ".json", ".png", ".yaml") or path == component / "LICENSE"
+            ):
                 info = zipfile.ZipInfo(path.relative_to(root).as_posix())
                 info.create_system = 3  # Stable UNIX permission metadata on Windows too.
                 info.compress_type = zipfile.ZIP_DEFLATED
