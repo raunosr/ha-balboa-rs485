@@ -26,7 +26,9 @@ Keep repository credentials read-only in CI, require approval for external fork
 workflows, and do not run untrusted code with production access. Review publication
 text for secrets and home-network information. Publish experimental limitations
 honestly; HACS download success is not hardware acceptance. No new write
-collaborators, license grants or unrelated public releases without user direction.
+collaborators, license changes or unrelated public releases without user direction.
+The owner explicitly selected MIT on 2026-09-08. Preserve LICENSE in the repository
+and HACS-distributed component; the package test enforces matching notices.
 
 The current task is HACS publication and repository safeguards, not automation
 migration or historical HA startup diagnosis. See `docs/publication_review.md`.

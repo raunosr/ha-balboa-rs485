@@ -19,7 +19,9 @@ implementation. Independent means separate code, not proof of independent discov
 
 Do not rely on balboa_robust's README calling pybalboa MIT: the inspected pybalboa
 LICENSE is Apache-2.0. Re-check license and preserve notices before any later source
-reuse. This private project has not yet selected a distribution license.
+reuse. The owner selected MIT for this independently implemented project on
+2026-09-08; see the root LICENSE and its included copy in the HACS component.
+This does not relicense the third-party references above.
 
 ## Features and verification
 
