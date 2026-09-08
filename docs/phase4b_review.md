@@ -1,15 +1,17 @@
 # Phase 4B review — 0.0.14
 
-## User correction — HACS publication preparation, 2026-09-08
+## Current status — HACS publication, 2026-09-08
 
-The user reports HA is operational again and Balboa is **not installed**. Treat
-that current report as authoritative; do not keep diagnosing the historical
-startup outage below or claim 0.0.14 is currently loaded. The requested next step
-is a sanitized public HACS repository with protected changes. The original private
-history is to remain a private archive. No HA restart or new spa connection is
-part of the publication preparation. Hardware acceptance remains incomplete.
+The user restored HA independently. Since that report, the public `v0.0.14`
+prerelease has been downloaded through HACS; a separate readback confirmed the
+installed version. The existing Balboa entry remains disabled and **not_loaded**,
+with physical controls disabled. No HA restart or new spa connection was made
+during publication. See [publication acceptance](publication_review.md) for public
+CI, repository protections and the download check. Hardware acceptance remains
+incomplete; do not keep diagnosing the superseded startup outage below or claim
+the HACS-downloaded version is currently running.
 
-## Current acceptance blocker — 2026-09-08 01:05 EEST
+## Historical acceptance blocker — 2026-09-08 01:05 EEST
 
 The second HA Core restart has not returned a working HA HTTP/MCP connection
 after over 13 minutes. This is **not a completed production handover**. The Balboa
@@ -45,7 +47,7 @@ advanced controls are laboratory-tested but not yet individually hardware accept
 0.0.14 revision `2370c933451ec49e627d8f34f2dae0672218f5cb` passed **610 tests**:
 527 core/tools (96.99%), 82 actual HA tests (97.04%), one extracted-ZIP test;
 lint, bundle and core/adapter types all passed. Private CI:
-[34164326918](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34164326918).
+[34164326918](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34164326918).
 Archive SHA-256:
 `de5e7d28067a2068b31c2ebcc9b968941110117b976358d1bde399ae820802e5`.
 The installer verified all 50 files and retained 0.0.13 at
@@ -102,7 +104,7 @@ Current candidate `78924bc1c6818f8babbaf8913d9637d12449f72d` passed all **602**
 tests: 520 core/tools (96.99% coverage), 81 actual HA 2026.8.3 (97.03%), and one
 extracted-ZIP installation test. Ruff, formatting, strict core/adapter types and
 byte-equal bundle checks all passed in private CI
-[34163062020](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34163062020).
+[34163062020](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34163062020).
 
 Archive `dist/balboa-rs485-0.0.13.zip`: 50 files, 1,459,114 uncompressed bytes,
 SHA-256 `fc7e9384127c5aacb084bb2887b65a10f17e755f25437f75389441fe6720a7b8`.
@@ -215,7 +217,7 @@ semantics remain unchanged; no storage schema migration is introduced.
 - All 477 tests passed: 401 core/tools (97.73% branch coverage), 75 actual HA
   2026.8.3 tests (97.67%), and one extracted-ZIP installation test. Lint, strict
   core/adapter types and byte-equal bundle checks passed in private CI
-  [34158381651](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34158381651),
+  [34158381651](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34158381651),
   revision `3bcb7c9558792fffffa73973da03e53e97db6177`.
 - `dist/balboa-rs485-0.0.12.zip`: 45 files, 1,244,736 bytes, SHA-256
   `3b335f3da609fd23faf03f276024a36c0fe0dacc58b11a1b2edda85b83b26ba3`.

@@ -33,7 +33,7 @@ reuse the wrong learned coefficients. No existing entity ID is renamed.
 - Real HA 2026.8.3: 67 lifecycle/storage/options/entity tests, 97.91% adapter
   branch coverage; one separate extracted-ZIP installation test passes.
 - All 455 tests, lint, strict core/adapter types and bundle checks passed in private
-  CI [34152509531](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34152509531),
+  CI [34152509531](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34152509531),
   code revision `d118984064be87335e6902e1b13f87ca209f5876`.
 - Additional review caught periodic metadata synchronization breaking every
   learning window: a regression test now spans those healthy same-epoch refreshes.
@@ -67,7 +67,7 @@ defect did not affect forecast calculations or physical commands; 0.0.10 was not
 declared complete.
 
 Final 0.0.11 code revision `5275f36757ecc1914359266edbf38d919a06deec` passed all
-455 tests in [CI 34153769564](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34153769564):
+455 tests in [CI 34153769564](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34153769564):
 387 core (97.69%), 67 HA (97.89%), one extracted-ZIP installation test, plus
 lint, strict core/adapter typing and bundle equality. The fixed 43-file package
 was installed and byte-verified; the previous 0.0.10 directory was retained.

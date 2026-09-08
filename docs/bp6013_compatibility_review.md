@@ -90,7 +90,7 @@ uses the same synthetic variant. Raw capture payloads are not test fixtures.
 
 0.0.9 is **local, not installed**. All 363 local core tests passed (97.54%
 coverage), plus formatting, lint, strict typing and generated-core equality.
-Private [CI 34101021761](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34101021761)
+Private [CI 34101021761](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34101021761)
 passed: 363 core tests (97.54%), 51 actual HA 2026.8.3 tests (97.19%), one isolated
 ZIP installation test, formatting/lint/typing/bundle checks. **415 tests passed**.
 The additional HA case uses channel negotiation, the reminder status and ten-byte

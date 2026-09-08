@@ -31,7 +31,7 @@ A real-TCP regression using the captured three-frame pattern failed before the f
 and now reaches READY in epoch 2 with one ACK total, rejecting an injected old-nonce
 reply. Last-budget and connection-loss-budget tests still pass. Local 342 tests
 passed, 97.54% coverage, plus lint/format/typing/bundle checks. Private CI
-[34098821512](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34098821512)
+[34098821512](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34098821512)
 passed both core and actual-HA jobs on `f16a4858f80cd1ffe9dd5b950fe73dcf7a15d42a`:
 342 core tests (97.54%), 50 actual HA tests (97.19%), one separate ZIP installation
 test; 393 passing tests total. Formatting, lint and both typing jobs also passed.
@@ -114,7 +114,7 @@ The latter records an actually sent ACK, not an optimistic ownership claim.
 
 ## Delivery state
 
-Private CI [34096864766](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34096864766)
+Private CI [34096864766](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34096864766)
 passed on `bff2fbc975247e9c82c1daf3e054f79fd950fd9c`: 341 core tests
 (97.53% coverage), 50 actual HA 2026.8.3 tests (97.19%), one separate ZIP install
 test, lint, formatting, strict core/adapter typing and bundle equality. Total 392
