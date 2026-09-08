@@ -20,7 +20,7 @@ the later approved 0.0.6 installation/restart is recorded in `hardware_validatio
 ## Verification
 
 Code commit `7be332e6955ee40d0d7d510a0a77ca30de73d09e` passed
-[private CI run 34052952001](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34052952001).
+[private CI run 34052952001](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34052952001).
 
 | Check | Result |
 | --- | --- |

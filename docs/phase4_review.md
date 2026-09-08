@@ -30,7 +30,7 @@ authorized.** No real-spa control readiness is claimed.
 
 ## Validation evidence
 
-Passing Linux candidate [32b3c50, CI 33990531055](https://github.com/raunosr/ha-balboa-rs485/actions/runs/33990531055):
+Passing Linux candidate [32b3c50, CI 33990531055](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/33990531055):
 
 | Check | Result |
 | --- | --- |

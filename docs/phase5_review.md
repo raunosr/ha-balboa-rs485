@@ -31,7 +31,7 @@ separate approval.
 ## Evidence
 
 Green code/test candidate **0ccf751**:
-[CI 34028249668](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34028249668).
+[CI 34028249668](https://github.com/raunosr/ha-balboa-rs485-private-archive/actions/runs/34028249668).
 
 | Check | Result |
 | --- | --- |

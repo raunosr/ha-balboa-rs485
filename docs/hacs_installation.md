@@ -5,6 +5,11 @@ repository is a custom integration source, not a HACS default-catalog entry.
 The first public release is experimental; installation success is not complete
 hardware or weak-network acceptance. Read [current limitations](phase4b_review.md).
 
+The public `v0.0.14` prerelease passed HACS validation and an explicit-version HACS
+download check on 2026-09-08. The existing HA entry was preserved and left disabled;
+runtime activation and hardware acceptance remain separate steps. See the
+[publication review](publication_review.md) for evidence.
+
 ## Install
 
 1. In HACS, open the three-dot menu → **Custom repositories**.
