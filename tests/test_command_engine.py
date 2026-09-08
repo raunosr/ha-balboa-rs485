@@ -9,6 +9,26 @@ from balboa_rs485.state.model import Control, PumpState
 from .test_state import observed
 
 
+@pytest.mark.parametrize("timeout", [0, -1, 0.2, float("nan"), float("inf")])
+def test_invalid_filter_confirmation_deadline_is_rejected(timeout):
+    with pytest.raises(ValueError, match="Filter confirmation timeout"):
+        CommandEngine(filter_confirmation_timeout=timeout)
+
+
+def test_filter_read_deadline_does_not_extend_ambiguous_pump_toggle():
+    engine = CommandEngine(confirmation_timeout=0.5, filter_confirmation_timeout=9)
+    engine.observe(observed(), now=1)
+    engine.request(Control.PUMP1, PumpState.HIGH, now=1)
+    action = engine.next_action(now=1.1)
+    engine.sent(action, at=1.1, cts_at=1.1)
+    assert engine.pending_transaction.action == action
+    engine.tick(now=1.7)
+    assert engine.pending_transaction is None
+    assert engine.history[-1].result == Stage.FAILED
+    assert engine.resync_epoch == 1
+    assert engine.next_action(now=1.7) is None
+
+
 def test_two_speed_pump_advances_only_after_each_observed_step():
     engine = CommandEngine(confirmation_guard=0.1)
     initial = observed()

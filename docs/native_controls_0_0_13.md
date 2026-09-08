@@ -1,4 +1,11 @@
-# Native controls and observations — 0.0.14
+# Native controls and observations — 0.0.15
+
+0.0.15 correction: filter confirmation can re-read an early mismatching response,
+with at most three total queries including lost-response retries. The default
+filter confirmation deadline is nine seconds so its query budget can finish.
+It never repeats the physical write or extends a sent deadline. Pump/toggle
+deadlines and allocation limits are unchanged. Hardware retest remains pending;
+see [filter confirmation review](filter_confirmation_review.md).
 
 0.0.14 correction: two-speed pumps can confirm their already-observed final goal
 when filtration skips intermediate OFF. BP6013G2 filter-running sensors now use

@@ -1,5 +1,10 @@
 # HACS publication review
 
+This records the publication-only checkpoint. Subsequent activation and native
+tests are recorded in [Phase 4B](phase4b_review.md) and the
+[filter confirmation review](filter_confirmation_review.md); the disabled-entry
+state below is historical, not a current production-state assertion.
+
 On 2026-09-08 the user requested public HACS distribution with basic repository
 protections and selected a private archive plus a sanitized public source snapshot.
 The user subsequently confirmed the publication exception and explicitly authorized

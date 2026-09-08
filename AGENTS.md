@@ -30,8 +30,12 @@ collaborators, license changes or unrelated public releases without user directi
 The owner explicitly selected MIT on 2026-09-08. Preserve LICENSE in the repository
 and HACS-distributed component; the package test enforces matching notices.
 
-The current task is HACS publication and repository safeguards, not automation
-migration or historical HA startup diagnosis. See `docs/publication_review.md`.
+Public HACS publication and scoped installation cleanup are complete. The current
+task is native-control hardware acceptance and its bounded filter-confirmation
+correction; see `docs/filter_confirmation_review.md`. The user explicitly deferred
+all automation migration/cleanup until the integration is complete. Do not resume
+historical HA startup diagnosis. The latest single-restart HACS activation allowance
+has been consumed (1/1); a further HA Core restart requires fresh permission.
 Run failure injection in the lab.
 Keep the Python core independent of Home Assistant. Never send unknown messages
 to hardware, treat an open socket as availability, or replay raw toggles.
