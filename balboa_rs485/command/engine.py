@@ -79,6 +79,7 @@ class CommandEngine:
         *,
         confirmation_guard: float = 0.2,
         confirmation_timeout: float = 4,
+        filter_confirmation_timeout: float | None = None,
         resync_settle: float = 0.5,
         state_max_age: float = 3,
         max_actions: int = 6,
@@ -93,6 +94,16 @@ class CommandEngine:
             raise ValueError("Require positive finite timing and guard < confirmation_timeout")
         self.confirmation_guard = confirmation_guard
         self.confirmation_timeout = confirmation_timeout
+        self.filter_confirmation_timeout = (
+            confirmation_timeout
+            if filter_confirmation_timeout is None
+            else filter_confirmation_timeout
+        )
+        if (
+            not math.isfinite(self.filter_confirmation_timeout)
+            or self.filter_confirmation_timeout <= confirmation_guard
+        ):
+            raise ValueError("Filter confirmation timeout must be finite and exceed guard")
         self.resync_settle = resync_settle
         self.state_max_age = state_max_age
         if type(max_actions) is not int or max_actions < 1:
@@ -116,6 +127,11 @@ class CommandEngine:
     @property
     def busy(self) -> bool:
         return self._inflight is not None
+
+    @property
+    def pending_transaction(self) -> Transaction | None:
+        """Immutable receipt for transport-owned readback scheduling, never a TX queue."""
+        return self._inflight
 
     def suspend(self, *, now: float) -> None:
         if self.state is not None:
@@ -305,7 +321,14 @@ class CommandEngine:
 
     def tick(self, *, now: float) -> None:
         pending = self._inflight
-        if pending is not None and now - pending.sent_at >= self.confirmation_timeout:
+        if pending is None:
+            return
+        timeout = (
+            self.filter_confirmation_timeout
+            if pending.action.intent.control == Control.FILTERS
+            else self.confirmation_timeout
+        )
+        if now - pending.sent_at >= timeout:
             self._history[-1] = replace(
                 pending,
                 result=Stage.FAILED,

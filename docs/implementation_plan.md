@@ -10,6 +10,10 @@ installation/hardware acceptance tests pass. The short target/session acceptance
 gate passed on 2026-09-07 with installed 0.0.9. Phase 6 completed with installed
 0.0.11, 455 passing automated tests and bounded production/UI acceptance; see
 `docs/phase6_review.md`. Phase 4B is next, before Phase 7.
+On 2026-09-08 HACS-managed 0.0.14 was activated and the native pump sequence passed.
+Filter restoration exposed a confirmation failure; the 0.0.15 candidate and its
+remaining hardware gate are recorded in `docs/filter_confirmation_review.md`.
+Do not advance to Phase 7 or migrate automations before that gate is reviewed.
 The 2026-09-07 MQTT inventory and revised dual-range/session UX are recorded in
 `docs/phase4b_design.md`. The complete 0.0.14 native-entity implementation includes
 range-aware restoration, filters and guarded maintenance controls. Production

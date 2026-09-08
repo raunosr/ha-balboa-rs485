@@ -8,9 +8,137 @@ import pytest
 from balboa_rs485.command.engine import CommandEngine, Stage
 from balboa_rs485.protocol.messages import FilterCyclesMessage
 from balboa_rs485.protocol.settings import FilterSchedule
+from balboa_rs485.runtime import SpaRuntime
 from balboa_rs485.state.model import Control
+from balboa_rs485.transport.policy import Mode
+from tools.simulator import server
 
+from .test_connection import FAST
 from .test_session_runner import lab
+
+
+@pytest.mark.parametrize("channel", [False, True])
+@pytest.mark.parametrize("early_replies", [1, 2])
+async def test_early_old_filter_readback_is_requeried_without_replaying_write(
+    monkeypatch, channel, early_replies
+):
+    """A controller may return its previous schedule before committing a write."""
+    original_encoder = server.encode_frame
+    old = server.configuration_fixture(server.Query.FILTERS).payload
+    replies = []
+
+    async with server.Simulator(
+        port=0, interval=0.03, control_lab=True, channel_lab=channel
+    ) as simulator:
+
+        def early_read(frame):
+            if frame.message_type == 35 and simulator.physical_commands == 1:
+                replies.append(frame)
+                if len(replies) <= early_replies:
+                    frame = replace(frame, payload=old)
+            return original_encoder(frame)
+
+        monkeypatch.setattr(server, "encode_frame", early_read)
+        async with SpaRuntime(
+            "127.0.0.1",
+            simulator.port,
+            mode=Mode.CHANNEL_RS485 if channel else Mode.CLASSIC_RS485,
+            timing=FAST,
+            engine=CommandEngine(
+                confirmation_guard=0.02, confirmation_timeout=0.4, resync_settle=0.06
+            ),
+        ) as runtime:
+            await runtime.connection.wait_for(lambda _: runtime.metadata_complete, timeout=4)
+            await runtime.async_update_filter(1, start=11 * 60 + 1)
+            assert len(replies) == early_replies + 1
+            assert runtime.state.filters.cycles[0].start_minute == 1
+            assert runtime.engine.history[-1].result == Stage.VERIFIED
+            assert simulator.physical_commands == 1
+            assert simulator.stats.connections == 1
+            assert simulator.stats.rejected_queries == 0
+
+
+@pytest.mark.parametrize("channel", [False, True])
+@pytest.mark.parametrize("dropped,old_replies", [(1, 0), (2, 0), (1, 1), (0, 99), (1, 99)])
+async def test_filter_confirmation_loss_and_mismatch_share_a_bounded_read_budget(
+    monkeypatch, channel, dropped, old_replies
+):
+    original_encoder = server.encode_frame
+    original = server.configuration_fixture(server.Query.FILTERS).payload
+    replies = []
+
+    async with server.Simulator(
+        port=0, interval=0.03, control_lab=True, channel_lab=channel
+    ) as simulator:
+
+        def imperfect_readback(frame):
+            if (
+                frame.message_type == 35
+                and simulator.physical_commands == 1
+                and simulator.stats.connections == 1
+            ):
+                replies.append(frame)
+                if len(replies) <= dropped:
+                    return b""
+                if len(replies) <= dropped + old_replies:
+                    frame = replace(frame, payload=original)
+            return original_encoder(frame)
+
+        monkeypatch.setattr(server, "encode_frame", imperfect_readback)
+        async with SpaRuntime(
+            "127.0.0.1",
+            simulator.port,
+            mode=Mode.CHANNEL_RS485 if channel else Mode.CLASSIC_RS485,
+            timing=FAST,
+            engine=CommandEngine(
+                confirmation_guard=0.02, confirmation_timeout=0.6, resync_settle=0.06
+            ),
+        ) as runtime:
+            await runtime.connection.wait_for(lambda _: runtime.metadata_complete, timeout=4)
+            if old_replies == 99:
+                with pytest.raises(ValueError, match="not verified"):
+                    await runtime.async_update_filter(1, start=11 * 60 + 1)
+                assert runtime.engine.history[-1].result == Stage.FAILED
+                assert len(replies) == FAST.query_attempts
+            else:
+                await runtime.async_update_filter(1, start=11 * 60 + 1)
+                assert runtime.state.filters.cycles[0].start_minute == 1
+                assert len(replies) == dropped + old_replies + 1
+                assert simulator.stats.connections == 1
+            assert simulator.physical_commands == 1
+            assert simulator.stats.rejected_queries == 0
+
+
+async def test_default_runtime_allows_configured_filter_read_retry_deadlines(monkeypatch):
+    """Default 2-second query retries must fit inside the filter write deadline."""
+    original_encoder = server.encode_frame
+    replies = []
+    async with server.Simulator(port=0, interval=0.03, control_lab=True) as simulator:
+
+        def drop_first_two(frame):
+            if (
+                frame.message_type == 35
+                and simulator.physical_commands == 1
+                and simulator.stats.connections == 1
+            ):
+                replies.append(frame)
+                if len(replies) <= 2:
+                    return b""
+            return original_encoder(frame)
+
+        monkeypatch.setattr(server, "encode_frame", drop_first_two)
+        async with SpaRuntime(
+            "127.0.0.1",
+            simulator.port,
+            mode=Mode.CLASSIC_RS485,
+            timing=replace(FAST, query_timeout=2),
+        ) as runtime:
+            await runtime.connection.wait_for(lambda _: runtime.metadata_complete, timeout=4)
+            await runtime.async_update_filter(1, start=11 * 60 + 1)
+            assert len(replies) == 3
+            assert runtime.engine.history[-1].result == Stage.VERIFIED
+            assert simulator.physical_commands == 1
+            assert simulator.stats.connections == 1
 
 
 async def test_filter_edit_reads_back_preserves_other_cycle_and_serializes_edits():

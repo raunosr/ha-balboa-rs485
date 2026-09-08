@@ -36,6 +36,7 @@ class _Commands:
         self._pending: Query | None = None
         self._sent_at = 0.0
         self._attempts = 0
+        self._filter_confirmation_reads = 0
         self.failures: list[str] = []
         self.guards: dict[Control, tuple[int, Callable[[], bool]]] = {}
 
@@ -72,6 +73,7 @@ class _Commands:
             self.fault = None
             self._pending = None
             self._query_index = self._attempts = 0
+            self._filter_confirmation_reads = 0
             self._next_metadata_refresh = now + self.timing.metadata_refresh_interval
             self.failures.clear()
         if self.metadata_idle and not self.engine.busy and now >= self._next_metadata_refresh:
@@ -137,10 +139,18 @@ class _Commands:
         if isinstance(message.token, Query):
             self._pending, self._sent_at = message.token, at
             self._attempts += 1
+            pending = self.engine.pending_transaction
+            if (
+                message.token == Query.FILTERS
+                and pending is not None
+                and pending.action.intent.control == Control.FILTERS
+            ):
+                self._filter_confirmation_reads += 1
             return
         assert isinstance(message.token, Action)
         self.engine.sent(replace(message.token, frame=message.frame), at=at, cts_at=cts_at)
         if message.token.intent.control == Control.FILTERS:
+            self._filter_confirmation_reads = 0
             self.refresh_filters()
 
     def refresh_filters(self) -> None:
@@ -168,6 +178,22 @@ class _Commands:
             return
         if matches:
             self._pending = None
+            pending = self.engine.pending_transaction
+            if (
+                isinstance(message, FilterCyclesMessage)
+                and self._refresh == Query.FILTERS
+                and pending is not None
+                and pending.action.epoch == epoch
+                and pending.action.intent.control == Control.FILTERS
+                and FilterSchedule(message.cycles) != pending.action.intent.desired
+                and self._filter_confirmation_reads < self.timing.query_attempts
+            ):
+                # The write can precede its controller commit or a queued old
+                # reply. Re-read at a fresh bus slot, never repeat the write.
+                # Lost replies and mismatches share the same finite read budget;
+                # neither resets the physical transaction's confirmation deadline.
+                self._attempts = self._filter_confirmation_reads
+                return
             self._attempts = 0
             if self._refresh is not None:
                 self._refresh = None
@@ -192,8 +218,15 @@ class SpaRuntime:
         timing: Timing | None = None,
         engine: CommandEngine | None = None,
     ) -> None:
-        self.engine = engine or CommandEngine()
         policy = timing or Timing()
+        # Filter confirmation includes explicit read queries, unlike status-only
+        # controls. Allow the existing finite query budget plus one healthy-status
+        # window for bus admission/confirmation; never extend a sent deadline.
+        self.engine = engine or CommandEngine(
+            filter_confirmation_timeout=max(
+                4.0, policy.query_timeout * policy.query_attempts + policy.degrade_after
+            )
+        )
         self._commands = _Commands(self.engine, policy)
         self._filter_lock = asyncio.Lock()
         self.connection = SpaConnection(

@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.14.** Native observations, controller diagnostics,
+**Experimental release 0.0.15.** Native observations, controller diagnostics,
 named Pump 1 speeds, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -15,11 +15,16 @@ the [Phase 4B review](docs/phase4b_review.md) for laboratory versus hardware evi
 initial learning, optional outdoor temperature and error metrics.
 
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
-passed, but the latest Pump 1 correction, advanced physical controls and long-duration
-weak-network recovery still need hardware acceptance. A finite three-allocation
+passed, including Pump 1 high-to-low on 0.0.14. Filter restoration exposed a
+confirmation failure; 0.0.15 adds bounded readback recovery, with its hardware
+retest still pending. Other advanced controls and long-duration weak-network
+recovery also need hardware acceptance. A finite three-allocation
 safety budget can leave controls unavailable. No automation migration is performed.
 An offline HA cannot restore a bathing session until it returns; the timer is not
 stored in the spa. Do not use experimental controls unattended.
+
+See the [0.0.15 filter confirmation review](docs/filter_confirmation_review.md)
+for reproducible laboratory failures, the scoped correction and remaining gates.
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.

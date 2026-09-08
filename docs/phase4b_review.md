@@ -1,6 +1,27 @@
 # Phase 4B review — 0.0.14
 
-## Current status — HACS publication, 2026-09-08
+## Current status — native acceptance, 2026-09-08
+
+HACS-managed 0.0.14 is now running with the original device and all 54 entities.
+The later activation used its separately authorized single HA restart (1/1).
+Old installation folders were moved to a recovery archive, not permanently
+deleted. Existing settings, identifiers, MQTT entities and automations were retained.
+
+Fresh BWALink-stopped checks preceded activation and native tests. Light OFF/ON/OFF,
+Pump 1 OFF/LOW/HIGH/LOW/OFF and Pumps 2/3 ON/OFF passed. The high-to-low test used
+the normal intermediate OFF; it did not reproduce controller-forced LOW.
+Filter start adjustment passed, but its first restoration was not confirmed and
+triggered recovery. Original schedules were subsequently restored and independently
+read back. Further hardware tests are paused, with current channel allocation
+attempts at 3/3; no runtime reload reset that budget.
+
+The 0.0.15 candidate fixes two independently reproduced readback weaknesses; it
+is not yet deployed or hardware accepted. See [filter confirmation review](filter_confirmation_review.md).
+Range-aware bathing, remaining advanced controls, natural Cycle 1 evidence and the
+long soak remain open. No automation changes or new HA restart were made during
+this acceptance/correction turn. The records below are historical checkpoints.
+
+## Historical status — HACS publication, 2026-09-08
 
 The user restored HA independently. Since that report, the public `v0.0.14`
 prerelease has been downloaded through HACS; a separate readback confirmed the
