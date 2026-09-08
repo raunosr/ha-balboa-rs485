@@ -1,0 +1,77 @@
+# Balboa RS485 for Home Assistant
+
+<img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
+
+Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
+**Experimental release 0.0.14.** Native observations, controller diagnostics,
+named Pump 1 speeds, Low/High profiles, two filter schedules with start/end time
+controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
+Supported pumps, blower, lights and accessories are discovered from the controller;
+absent hardware is not represented by invented sensors. Changes are verified from
+observed spa state, never optimistic toggles.
+See the [native controls guide](docs/native_controls_0_0_13.md) for behavior and
+the [Phase 4B review](docs/phase4b_review.md) for laboratory versus hardware evidence. The
+[prediction guide](docs/heating_prediction.md) explains the five forecast sensors,
+initial learning, optional outdoor temperature and error metrics.
+
+**Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
+passed, but the latest Pump 1 correction, advanced physical controls and long-duration
+weak-network recovery still need hardware acceptance. A finite three-allocation
+safety budget can leave controls unavailable. No automation migration is performed.
+An offline HA cannot restore a bathing session until it returns; the timer is not
+stored in the spa. Do not use experimental controls unattended.
+
+Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
+[installation and safety guide](docs/home_assistant.md) before connecting.
+Install through HACS as a **custom integration repository**; it is not in HACS's
+default catalog. See [HACS installation](docs/hacs_installation.md). The original
+icon is bundled locally. Installing/downloading is separate from physical acceptance.
+
+The public repository starts from a reviewed source snapshot. Earlier private
+development history and its CI links are preserved in a separate private archive;
+historical review documents are not current production-state assertions.
+
+The standalone core requires Python 3.12+. No runtime dependencies, MQTT, Docker,
+cloud, Home Assistant or spa hardware are needed for core development.
+
+```sh
+python -m pip install -e '.[dev]'
+python -m tools.dev test
+python -m tools.dev lint
+python -m tools.simulator --scenario normal --port 8899
+# In a second terminal:
+python -m tools.smoke_client --host 127.0.0.1 --port 8899 --frames 6
+```
+
+See [local testing](docs/local_testing.md) for Windows, virtual environments,
+failure scenarios and `make` equivalents. Start with [architecture](docs/architecture.md),
+[implementation plan](docs/implementation_plan.md), and [protocol sources](docs/protocol_sources.md).
+[Hardware validation](docs/hardware_validation.md) includes a short passive Elfin
+check. Short target/session tests passed on 0.0.9; long-duration recovery/soak
+remain open. See [hardware acceptance](docs/bp6013_compatibility_review.md).
+GitHub repository: [`raunosr/ha-balboa-rs485`](https://github.com/raunosr/ha-balboa-rs485).
+See [contribution rules](CONTRIBUTING.md) and [security reporting](SECURITY.md).
+
+For the Phase 2 loopback lab, add `--transport-lab` to the simulator and use
+`--transport --mode classic-rs485 --duration 15` in the smoke client. This only
+sends known configuration queries. Default `auto` is passive: overlapping CTS
+signatures cannot establish ownership. Experimental correlated channel negotiation
+is implemented and simulator-tested in Phase 4; short Elfin/BP6013G2 acceptance is
+recorded for 0.0.9, with a remaining long-duration allocation-budget limit. See
+[Phase 2 review](docs/phase2_review.md) and [design](docs/phase2_design.md).
+
+## Observation-verified command lab
+
+```sh
+python -m tools.simulator --control-lab --port 8899
+# Second terminal (numeric loopback only):
+python -m tools.smoke_client --mode classic-rs485 --interactive
+```
+
+Try `pump1 high`, `target 39`, `light1 on`, `wait`, `history`, `quit`.
+Desired values coalesce; one physical step is sent per fresh CTS, then verified
+from incoming status. Lost confirmation requires resynchronization, not blind
+toggle replay. Earlier physical target/session tests and bounded light/Pump 2/3
+tests passed; advanced controls remain separately hardware-unvalidated. Read the
+[Phase 3 safety policy](docs/phase3_design.md), [review](docs/phase3_review.md),
+and [local test recipes](docs/local_testing.md).

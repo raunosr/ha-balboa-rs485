@@ -1,0 +1,238 @@
+{
+  "title": "Balboa RS485",
+  "services": {
+    "set_filter_cycle": {
+      "name": "Set filter cycle",
+      "description": "Change one schedule in a single verified update. Times use the spa's local clock. A start-only change retains duration; an end sets duration. Equal start/end is unsupported. The other cycle is preserved from a fresh read.",
+      "fields": {"config_entry_id": {"name": "Spa"}, "cycle": {"name": "Cycle (1 or 2)"}, "start": {"name": "Start"}, "end": {"name": "End"}, "enabled": {"name": "Enabled (Cycle 2 only)"}}
+    },
+    "abandon_heating_session": {
+      "name": "Abandon heating-session restoration",
+      "description": "Forget the session without sending spa commands. Only use to deliberately resolve a conflict: current temperatures and modes stay as they are. Normally use End to restore settings.",
+      "fields": {"config_entry_id": {"name": "Spa"}, "confirm": {"name": "I accept leaving current settings unchanged"}}
+    },
+    "start_bathing_session": {
+      "name": "Start bathing session",
+      "description": "Activate High and temporarily Ready. Raise High only if below the chosen minimum. Restore the original High target, range and heating policy when the session ends. Restoration waits if HA or the connection is offline.",
+      "fields": {
+        "config_entry_id": {"name": "Spa"},
+        "minimum_temperature_c": {"name": "Minimum bathing temperature (°C)", "description": "Higher stored High targets remain unchanged. Fahrenheit spas round this minimum up to the next whole °F."},
+        "duration": {"name": "Duration", "description": "Specify either duration or end time."},
+        "end_time": {"name": "End time", "description": "Next local HH:MM or ISO datetime including a UTC offset."}
+      }
+    },
+    "start_heating_session": {
+      "name": "Start heating session",
+      "description": "Set a timed heating target, then restore the maintenance setpoint.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Spa"
+        },
+        "target_temperature": {
+          "name": "Target temperature",
+          "description": "A representable value in the spa's current unit and range."
+        },
+        "maintenance_temperature": {
+          "name": "Maintenance temperature"
+        },
+        "temperature_unit": {
+          "name": "Temperature unit",
+          "description": "Must match the spa's current unit."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Starts immediately. Specify either duration or end time."
+        },
+        "end_time": {
+          "name": "End time",
+          "description": "Next local HH:MM or ISO datetime including a UTC offset."
+        }
+      }
+    },
+    "cancel_heating_session": {
+      "name": "Cancel heating session",
+      "description": "Restore the maintenance setpoint. If offline, restoration waits for reconnection.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Spa"
+        }
+      }
+    },
+    "extend_heating_session": {
+      "name": "Extend heating session",
+      "description": "Adjust an active session's deadline. The default is 30 minutes.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Spa"
+        },
+        "duration": {
+          "name": "Time adjustment"
+        }
+      }
+    },
+    "reduce_heating_session": {
+      "name": "Reduce heating session",
+      "description": "Adjust an active session's deadline. The default is 30 minutes.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Spa"
+        },
+        "duration": {
+          "name": "Time adjustment"
+        }
+      }
+    }
+  },
+  "entity": {
+    "time": {
+      "clock": {"name": "Clock"},
+      "filter_cycle_start": {"name": "Filter cycle {index} start"},
+      "filter_cycle_end": {"name": "Filter cycle {index} end"}
+    },
+    "button": {
+      "normal_operation": {"name": "Normal operation"},
+      "soak": {"name": "Soak"},
+      "acknowledge_reminder": {"name": "Acknowledge reminder"},
+      "start_bathing": {"name": "Start bathing"},
+      "end_bathing": {"name": "End bathing"},
+      "extend_bathing": {"name": "Extend bathing"},
+      "reduce_bathing": {"name": "Reduce bathing"}
+    },
+    "number": {
+      "bathing_duration": {"name": "Bathing duration"},
+      "minimum_bathing_temperature": {"name": "Minimum bathing temperature"}
+    },
+    "climate": {
+      "spa": {"state_attributes":{"preset_mode":{"state":{"low":"Low (maintenance)","high":"High (bathing)"}}}}
+    },
+    "select": {
+      "temperature_unit": {"name": "Temperature unit", "state": {"celsius": "Celsius", "fahrenheit": "Fahrenheit"}},
+      "heating_policy": {"name":"Heating policy","state":{"ready":"Ready","rest":"Rest"}},
+      "pump_mode": {"name":"Pump {index} mode","state":{"off":"Off","circulation":"Circulation (1)","jets":"Jets (2)","on":"On"}}
+    },
+    "sensor": {
+      "latest_fault": {"name": "Latest fault"},
+      "fault_log_entries": {"name": "Fault log entries"},
+      "filter_cycle_duration": {"name": "Filter cycle {index} duration"},
+      "channel": {"name": "Channel"},
+      "crc_errors": {"name": "CRC errors"},
+      "recoveries": {"name": "Recoveries"},
+      "channel_allocations_remaining": {"name": "Channel allocations remaining"},
+      "heater_state": {"name":"Heater state","state":{"off":"Off","heating":"Heating","waiting":"Waiting"}},
+      "heating_mode": {"name":"Heating mode","state":{"ready":"Ready","rest":"Rest","ready_in_rest":"Ready in Rest"}},
+      "temperature_range": {"name":"Temperature range","state":{"low":"Low (maintenance)","high":"High (bathing)"}},
+      "reminder": {"name":"Reminder","state":{"none":"None","clean_filter":"Clean filter","check_ph":"Check pH","check_sanitizer":"Check sanitizer","unrecognized":"Unrecognized reminder"}},
+      "spa_clock": {"name":"Spa clock"},
+      "clock_format": {"name":"Clock format","state":{"12h":"12-hour","24h":"24-hour"}},
+      "water_temperature": {"name": "Water temperature"},
+      "heating_rate": {"name": "Heating rate"},
+      "heating_eta": {"name": "Heating time remaining"},
+      "ready_at": {"name": "Ready at"},
+      "prediction_mae": {"name": "Heating prediction error"},
+      "prediction_samples": {"name": "Heating learning segments"},
+      "connection": {
+        "name": "Connection",
+        "state": {
+          "disconnected": "Disconnected",
+          "connecting": "Connecting",
+          "waiting_for_frame": "Waiting for traffic",
+          "detecting_protocol": "Read-only protocol detection",
+          "synchronizing": "Synchronizing",
+          "ready": "Ready",
+          "degraded": "Degraded",
+          "recovering": "Recovering"
+        }
+      },
+      "heating_session": {
+        "name": "Heating session",
+        "state": {
+          "idle": "Idle",
+          "preheating": "Preheating",
+          "target_reached": "Target reached",
+          "holding": "Holding",
+          "restoring": "Restoring maintenance"
+        }
+      }
+    },
+    "binary_sensor": {
+      "circulation_pump_running": {"name": "Circulation pump running"},
+      "filter_cycle_running": {"name": "Filter cycle {index} running"},
+      "heater_running": {"name": "Heater running"},
+      "hold": {"name": "Hold"},
+      "priming": {"name": "Priming"},
+      "panel_locked": {"name": "Panel locked"},
+      "settings_locked": {"name": "Settings locked"}
+    },
+    "switch": {
+      "hold": {"name": "Hold"},
+      "clock_24h": {"name": "Clock 24h"},
+      "filter_cycle_2_enabled": {"name": "Filter cycle 2 enabled"},
+      "aux": {
+        "name": "Aux {index}"
+      },
+      "mister": {
+        "name": "Mister"
+      }
+    },
+    "light": {
+      "light": {
+        "name": "Light {index}"
+      }
+    },
+    "fan": {
+      "blower": {
+        "name": "Blower"
+      },
+      "pump": {
+        "name": "Pump {index}"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Controls and heating prediction",
+        "description": "Only enable after selecting a verified protocol and stopping competing clients. Commands are verified from observed state. Changing this option does not reconnect.",
+        "data": {
+          "enable_controls": "Enable physical controls",
+          "outdoor_temperature_entity": "Outdoor temperature sensor (optional)",
+          "fallback_heating_rate": "Initial heating estimate (°C/hour)"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Uses fresh °C/°F readings. Leave empty to learn from water temperature only. Changing the sensor resets the learned model.",
+          "fallback_heating_rate": "Used until five clean heating windows have been learned. An estimate, not a measured heating rate."
+        }
+      }
+    }
+  },
+  "config": {
+    "abort": {
+      "already_in_progress": "Another setup for this endpoint is already in progress.",
+      "reconfigure_successful": "Connection updated.",
+      "already_configured": "This host and port are already configured."
+    },
+    "step": {
+      "reconfigure": {
+        "title": "Change spa connection",
+        "description": "Keep this entry to preserve entity identity. A changed endpoint is checked passively before replacing the owned connection.",
+        "data": {
+          "host": "Host",
+          "port": "TCP port",
+          "protocol_mode": "Protocol mode"
+        }
+      },
+      "user": {
+        "title": "Connect a Balboa spa",
+        "description": "Stop BWAlink and other clients before connecting. Auto only listens. Channel RS485 negotiates ownership (experimental); classic RS485 requires a verified classic bus. BWA TCP is only for an actual BWA Wi-Fi module, never a raw Elfin gateway. The connection check itself only listens. Physical controls remain disabled initially.",
+        "data": {
+          "host": "Host",
+          "port": "TCP port",
+          "protocol_mode": "Protocol mode"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No valid Balboa status received. Check the host, port, gateway and competing clients."
+    }
+  }
+}

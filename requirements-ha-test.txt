@@ -1,0 +1,2 @@
+# Generated fixtures pinned to Home Assistant 2026.8.3 (Linux, Python 3.14).
+pytest-homeassistant-custom-component==0.13.357

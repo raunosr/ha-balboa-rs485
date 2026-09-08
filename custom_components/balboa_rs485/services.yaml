@@ -1,0 +1,129 @@
+set_filter_cycle:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    cycle:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 2
+          step: 1
+          mode: box
+    start:
+      selector:
+        time: {}
+    end:
+      selector:
+        time: {}
+    enabled:
+      selector:
+        boolean: {}
+start_bathing_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    minimum_temperature_c:
+      default: 36.5
+      selector:
+        number:
+          min: 10
+          max: 40
+          step: 0.5
+          unit_of_measurement: °C
+          mode: box
+    duration:
+      example: '02:00:00'
+      selector:
+        duration: {}
+    end_time:
+      example: '18:00'
+      selector:
+        text: {}
+start_heating_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    target_temperature:
+      required: true
+      example: 38
+      selector:
+        number:
+          min: 10
+          max: 104
+          step: 0.5
+          mode: box
+    maintenance_temperature:
+      required: true
+      example: 27
+      selector:
+        number:
+          min: 10
+          max: 104
+          step: 0.5
+          mode: box
+    temperature_unit:
+      default: C
+      selector:
+        select:
+          options: [C, F]
+    duration:
+      example: '10:00:00'
+      selector:
+        duration: {}
+    end_time:
+      example: '18:00'
+      selector:
+        text: {}
+abandon_heating_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    confirm:
+      required: true
+      default: false
+      selector:
+        boolean: {}
+cancel_heating_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+extend_heating_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    duration:
+      default:
+        minutes: 30
+      selector:
+        duration: {}
+reduce_heating_session:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: balboa_rs485
+    duration:
+      default:
+        minutes: 30
+      selector:
+        duration: {}

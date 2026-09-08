@@ -1,0 +1,15 @@
+{
+  "description": "Synthetic classic lab fixture, not captured from hardware",
+  "address": 255,
+  "family": 175,
+  "message_type": 19,
+  "payload_hex": "00 00 36 0c 00 00 00 00 00 01 14 00 00 02 00 00 00 00 00 00 4c 00 00 00",
+  "expected": {
+    "current_temperature": 27.0,
+    "target_temperature": 38.0,
+    "unit": "C",
+    "pump1": 0,
+    "pump2": 0,
+    "heat_state": 1
+  }
+}

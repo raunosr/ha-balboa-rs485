@@ -1,0 +1,7 @@
+{
+  "source": "https://github.com/garbled1/pybalboa/blob/845c0c65f367d434be042f9683a1a4f19ffdd0ac/tests/test_utils.py",
+  "frames": [
+    {"name": "device-present", "hex": "7e 05 0a bf 04 77 7e"},
+    {"name": "fahrenheit-status", "hex": "7e 1d ff af 13 00 00 64 08 2d 00 00 01 00 00 04 00 00 00 00 00 00 00 00 00 64 00 00 00 06 7e"}
+  ]
+}

@@ -1,0 +1,238 @@
+{
+  "title": "Balboa RS485",
+  "services": {
+    "set_filter_cycle": {
+      "name": "Aseta suodatusjakso",
+      "description": "Muuta yhden jakson ajat yhdessä. Ajat ovat altaan paikallista aikaa. Aloituksen muutos säilyttää keston, lopetuksen muutos asettaa keston. Samat aloitus- ja lopetusajat eivät ole tuettuja. Toinen jakso säilytetään tuoreesta lukemasta.",
+      "fields": {"config_entry_id": {"name": "Allas"}, "cycle": {"name": "Jakso (1 tai 2)"}, "start": {"name": "Aloitus"}, "end": {"name": "Lopetus"}, "enabled": {"name": "Käytössä (vain jakso 2)"}}
+    },
+    "abandon_heating_session": {
+      "name": "Hylkää lämmitysjakson palautus",
+      "description": "Poista jakson palautusvelvoite lähettämättä altaalle komentoja. Käytä vain ristiriidan tietoiseen ratkaisuun: nykyinen lämpötila ja tilat jäävät ennalleen. Tavallinen Lopeta-painike palauttaa asetukset.",
+      "fields": {"config_entry_id": {"name": "Allas"}, "confirm": {"name": "Vahvistan asetusten jäävän ennalleen"}}
+    },
+    "start_bathing_session": {
+      "name": "Aloita kylpyjakso",
+      "description": "Vaihda High-alueelle ja tilapäisesti Ready-tilaan. Korota High-lämpöä vain sen ollessa valittua vähimmäislämpöä alempi. Palauta alkuperäinen High-lämpö, alue ja lämmitystila jakson lopuksi. Palautus odottaa HA:n tai yhteyden ollessa poissa.",
+      "fields": {
+        "config_entry_id": {"name": "Allas"},
+        "minimum_temperature_c": {"name": "Kylvyn vähimmäislämpö (°C)", "description": "Korkeampi tallennettu High-lämpö säilyy ennallaan. Fahrenheit-altaassa vähimmäislämpö pyöristetään ylöspäin kokonaiseen °F-asteeseen."},
+        "duration": {"name": "Kesto", "description": "Anna joko kesto tai päättymisaika."},
+        "end_time": {"name": "Päättymisaika", "description": "Seuraava paikallinen HH:MM tai ISO-aikaleima aikavyöhykkeineen."}
+      }
+    },
+    "start_heating_session": {
+      "name": "Aloita lämmitysjakso",
+      "description": "Lämmittää tavoitelämpöön ja palauttaa ylläpitoasetuksen jakson lopuksi.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Allas"
+        },
+        "target_temperature": {
+          "name": "Tavoitelämpötila",
+          "description": "Altaan nykyisen yksikön ja lämpötila-alueen mukainen arvo."
+        },
+        "maintenance_temperature": {
+          "name": "Ylläpitolämpötila"
+        },
+        "temperature_unit": {
+          "name": "Lämpötilayksikkö",
+          "description": "Yksikön on vastattava altaan yksikköä."
+        },
+        "duration": {
+          "name": "Kesto",
+          "description": "Kesto alkaa heti. Anna joko kesto tai päättymisaika."
+        },
+        "end_time": {
+          "name": "Päättymisaika",
+          "description": "Seuraava paikallinen HH:MM tai päivämäärä ja kellonaika UTC-poikkeamineen."
+        }
+      }
+    },
+    "cancel_heating_session": {
+      "name": "Peru lämmitysjakso",
+      "description": "Palauttaa ylläpitolämpötilan. Katkon aikana palautus odottaa yhteyttä.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Allas"
+        }
+      }
+    },
+    "extend_heating_session": {
+      "name": "Pidennä lämmitysjaksoa",
+      "description": "Muuta käynnissä olevan jakson päättymisaikaa. Oletus on 30 minuuttia.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Allas"
+        },
+        "duration": {
+          "name": "Ajan muutos"
+        }
+      }
+    },
+    "reduce_heating_session": {
+      "name": "Lyhennä lämmitysjaksoa",
+      "description": "Muuta käynnissä olevan jakson päättymisaikaa. Oletus on 30 minuuttia.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Allas"
+        },
+        "duration": {
+          "name": "Ajan muutos"
+        }
+      }
+    }
+  },
+  "entity": {
+    "time": {
+      "clock": {"name": "Altaan kellonaika"},
+      "filter_cycle_start": {"name": "Suodatusjakson {index} aloitus"},
+      "filter_cycle_end": {"name": "Suodatusjakson {index} lopetus"}
+    },
+    "button": {
+      "normal_operation": {"name": "Normaali käyttö (poistu Holdista)"},
+      "soak": {"name": "Soak (pumput pois)"},
+      "acknowledge_reminder": {"name": "Kuittaa muistutus"},
+      "start_bathing": {"name": "Aloita kylpyjakso"},
+      "end_bathing": {"name": "Lopeta kylpyjakso"},
+      "extend_bathing": {"name": "Pidennä kylpyjaksoa 30 min"},
+      "reduce_bathing": {"name": "Lyhennä kylpyjaksoa 30 min"}
+    },
+    "number": {
+      "bathing_duration": {"name": "Kylpyjakson kesto"},
+      "minimum_bathing_temperature": {"name": "Kylvyn vähimmäislämpö"}
+    },
+    "climate": {
+      "spa": {"state_attributes":{"preset_mode":{"state":{"low":"Low (ylläpito)","high":"High (kylpy)"}}}}
+    },
+    "select": {
+      "temperature_unit": {"name": "Lämpötilayksikkö", "state": {"celsius": "Celsius", "fahrenheit": "Fahrenheit"}},
+      "heating_policy": {"name":"Lämmityksen toimintatapa","state":{"ready":"Ready (valmis)","rest":"Rest (lepo)"}},
+      "pump_mode": {"name":"Pumpun {index} tila","state":{"off":"Pois","circulation":"Kierto (1)","jets":"Poreet (2)","on":"Päällä"}}
+    },
+    "sensor": {
+      "latest_fault": {"name": "Viimeisin historiallinen vika"},
+      "fault_log_entries": {"name": "Vikahistorian merkinnät"},
+      "filter_cycle_duration": {"name": "Suodatusjakson {index} kesto"},
+      "channel": {"name": "Kanava"},
+      "crc_errors": {"name": "CRC-virheet"},
+      "recoveries": {"name": "Yhteyden palautumiset"},
+      "channel_allocations_remaining": {"name": "Kanavavarauksia jäljellä"},
+      "heater_state": {"name":"Lämmittimen tila","state":{"off":"Pois","heating":"Lämmittää","waiting":"Odottaa"}},
+      "heating_mode": {"name":"Lämmitystila","state":{"ready":"Ready (valmis)","rest":"Rest (lepo)","ready_in_rest":"Tilapäinen Ready lepotilassa"}},
+      "temperature_range": {"name":"Lämpötila-alue","state":{"low":"Low (ylläpito)","high":"High (kylpy)"}},
+      "reminder": {"name":"Muistutus","state":{"none":"Ei muistutusta","clean_filter":"Puhdista suodatin","check_ph":"Tarkista pH","check_sanitizer":"Tarkista desinfiointiaine","unrecognized":"Tunnistamaton muistutus"}},
+      "spa_clock": {"name":"Altaan kello"},
+      "clock_format": {"name":"Kellon näyttötapa","state":{"12h":"12 tuntia","24h":"24 tuntia"}},
+      "water_temperature": {"name": "Veden lämpötila"},
+      "heating_rate": {"name": "Lämmitysnopeus"},
+      "heating_eta": {"name": "Lämmitysaikaa jäljellä"},
+      "ready_at": {"name": "Arvioitu valmistumisaika"},
+      "prediction_mae": {"name": "Lämmitysennusteen virhe"},
+      "prediction_samples": {"name": "Lämmityksen oppimisjaksot"},
+      "connection": {
+        "name": "Yhteys",
+        "state": {
+          "disconnected": "Ei yhteyttä",
+          "connecting": "Yhdistetään",
+          "waiting_for_frame": "Odotetaan liikennettä",
+          "detecting_protocol": "Protokollan tunnistus, vain luku",
+          "synchronizing": "Synkronoidaan",
+          "ready": "Valmis",
+          "degraded": "Yhteys heikentynyt",
+          "recovering": "Palautetaan yhteyttä"
+        }
+      },
+      "heating_session": {
+        "name": "Lämmitysjakso",
+        "state": {
+          "idle": "Ei käynnissä",
+          "preheating": "Esilämmitys",
+          "target_reached": "Tavoite saavutettu",
+          "holding": "Lämpötilan ylläpito",
+          "restoring": "Ylläpitolämpöön palautus"
+        }
+      }
+    },
+    "binary_sensor": {
+      "circulation_pump_running": {"name": "Kiertopumppu käynnissä"},
+      "filter_cycle_running": {"name": "Suodatusjakso {index} käynnissä"},
+      "heater_running": {"name": "Lämmitin käynnissä"},
+      "hold": {"name": "Hold (huoltotauko)"},
+      "priming": {"name": "Esitäyttö (Priming)"},
+      "panel_locked": {"name": "Paneeli lukittu"},
+      "settings_locked": {"name": "Asetukset lukittu"}
+    },
+    "switch": {
+      "hold": {"name": "Hold-huoltotila"},
+      "clock_24h": {"name": "24 tunnin kello"},
+      "filter_cycle_2_enabled": {"name": "Suodatusjakso 2 käytössä"},
+      "aux": {
+        "name": "Lisälaite {index}"
+      },
+      "mister": {
+        "name": "Sumutin"
+      }
+    },
+    "light": {
+      "light": {
+        "name": "Valo {index}"
+      }
+    },
+    "fan": {
+      "blower": {
+        "name": "Puhallin"
+      },
+      "pump": {
+        "name": "Pumppu {index}"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ohjaukset ja lämmitysennuste",
+        "description": "Salli ohjaukset vasta protokollan varmistamisen ja muiden asiakkaiden sammuttamisen jälkeen. Komennot varmennetaan havaitusta tilasta. Asetuksen muuttaminen ei katkaise yhteyttä.",
+        "data": {
+          "enable_controls": "Salli laiteohjaukset",
+          "outdoor_temperature_entity": "Ulkolämpötilasensori (valinnainen)",
+          "fallback_heating_rate": "Alustava lämmitysnopeus (°C/tunti)"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Käyttää tuoreita °C/°F-lukemia. Tyhjänä malli oppii vain veden lämpötilasta. Sensorin vaihtaminen nollaa opitun mallin.",
+          "fallback_heating_rate": "Käytössä, kunnes viisi häiriötöntä lämmitysjaksoa on opittu. Arvio, ei mitattu lämmitysnopeus."
+        }
+      }
+    }
+  },
+  "config": {
+    "abort": {
+      "already_in_progress": "Tämän osoitteen käyttöönotto on jo käynnissä toisessa ikkunassa.",
+      "reconfigure_successful": "Yhteys päivitetty.",
+      "already_configured": "Tämä osoite ja portti on jo määritetty."
+    },
+    "step": {
+      "reconfigure": {
+        "title": "Muuta allasyhteyttä",
+        "description": "Säilytä tämä määritys, jotta entiteettien tunnisteet pysyvät samoina. Uusi osoite tarkistetaan kuuntelemalla ennen yhteyden vaihtamista.",
+        "data": {
+          "host": "Verkko-osoite",
+          "port": "TCP-portti",
+          "protocol_mode": "Protokollatila"
+        }
+      },
+      "user": {
+        "title": "Yhdistä Balboa-allas",
+        "description": "Sammuta BWAlink ja muut asiakkaat ennen yhdistämistä. Auto vain kuuntelee. Channel RS485 neuvottelee oman kanavan (kokeellinen); classic RS485 vaatii varmennetun perinteisen väylän. BWA TCP on vain aidolle BWA-Wi-Fi-moduulille, ei Elfin-yhdyskäytävälle. Yhteystarkistus vain kuuntelee. Laiteohjaukset ovat aluksi pois käytöstä.",
+        "data": {
+          "host": "Verkko-osoite",
+          "port": "TCP-portti",
+          "protocol_mode": "Protokollatila"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kelvollista Balboa-tilaviestiä ei saatu. Tarkista osoite, portti, yhdyskäytävä ja muut asiakkaat."
+    }
+  }
+}

@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ha-balboa-rs485"
+version = "0.0.14"
+description = "Experimental local Balboa RS485 spa integration: native controls, bathing sessions and diagnostics"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+  "pytest-asyncio>=1,<2",
+  "pytest-cov>=7,<8",
+  "ruff==0.16.6",
+  "mypy==2.3.1",
+  "tzdata", # ZoneInfo fixtures on Windows; runtime/HA supplies its own zones.
+]
+
+[project.scripts]
+balboa-simulator = "tools.simulator.cli:main"
+balboa-smoke = "tools.smoke_client.cli:main"
+balboa-dev = "tools.dev:main"
+
+[tool.setuptools.packages.find]
+include = ["balboa_rs485*", "tools*"]
+
+[tool.setuptools.package-data]
+"tools.simulator" = ["fixtures/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["balboa_rs485", "tools"]
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+fail_under = 95
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".research", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["balboa_rs485", "tools"]
