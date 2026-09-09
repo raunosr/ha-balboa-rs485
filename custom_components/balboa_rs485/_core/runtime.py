@@ -215,6 +215,7 @@ class SpaRuntime:
         port: int,
         *,
         mode: Mode = Mode.AUTO,
+        allow_unarbitrated_writes: bool = False,
         timing: Timing | None = None,
         engine: CommandEngine | None = None,
     ) -> None:
@@ -230,7 +231,12 @@ class SpaRuntime:
         self._commands = _Commands(self.engine, policy)
         self._filter_lock = asyncio.Lock()
         self.connection = SpaConnection(
-            host, port, mode=mode, timing=policy, participant=self._commands
+            host,
+            port,
+            mode=mode,
+            timing=policy,
+            participant=self._commands,
+            allow_unarbitrated_writes=allow_unarbitrated_writes,
         )
 
     @property

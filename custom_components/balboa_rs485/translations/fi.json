@@ -214,25 +214,28 @@
     "step": {
       "reconfigure": {
         "title": "Muuta allasyhteyttä",
-        "description": "Säilytä tämä määritys, jotta entiteettien tunnisteet pysyvät samoina. Uusi osoite tarkistetaan kuuntelemalla ennen yhteyden vaihtamista.",
+        "description": "Säilytä määritys, jotta entiteettien tunnisteet pysyvät samoina. Tarkistus vain kuuntelee. direct-rs485-tcp tarkoittaa Suora RS485/TCP – kiinteä osoite (kokeellinen): lähetys ilman kanavavarausta tai CTS-lupaa, myös asetuskyselyissä. Altaan paneeli jakaa väylän, joten törmäykset ovat mahdollisia. Sammuta muut verkkoasiakkaat. Käytä vain erikseen hyväksyttyyn, valvottuun yhteensopivuuskokeeseen.",
         "data": {
           "host": "Verkko-osoite",
           "port": "TCP-portti",
-          "protocol_mode": "Protokollatila"
+          "protocol_mode": "Yhteystapa",
+          "accept_direct_bus_risk": "Hyväksyn suoran väylälähetyksen törmäysriskin ja olen sammuttanut muut verkkoasiakkaat"
         }
       },
       "user": {
         "title": "Yhdistä Balboa-allas",
-        "description": "Sammuta BWAlink ja muut asiakkaat ennen yhdistämistä. Auto vain kuuntelee. Channel RS485 neuvottelee oman kanavan (kokeellinen); classic RS485 vaatii varmennetun perinteisen väylän. BWA TCP on vain aidolle BWA-Wi-Fi-moduulille, ei Elfin-yhdyskäytävälle. Yhteystarkistus vain kuuntelee. Laiteohjaukset ovat aluksi pois käytöstä.",
+        "description": "Sammuta muut verkkoasiakkaat. Auto vain kuuntelee; channel-rs485 varaa kanavan; classic-rs485 käyttää CTS-lupaa. bwa-tcp on aidolle Balboa-Wi-Fi-moduulille, ei raakaa väylää välittävälle yhdyskäytävälle. direct-rs485-tcp tarkoittaa Suora RS485/TCP – kiinteä osoite (kokeellinen): ei varausta eikä CTS-lupaa, myös asetuskyselyissä. Altaan paneeli jakaa väylän, joten törmäykset ovat mahdollisia. Erillinen riskin hyväksyntä vaaditaan. Tarkistus vain kuuntelee, ja laiteohjaukset ovat aluksi pois käytöstä.",
         "data": {
           "host": "Verkko-osoite",
           "port": "TCP-portti",
-          "protocol_mode": "Protokollatila"
+          "protocol_mode": "Yhteystapa",
+          "accept_direct_bus_risk": "Hyväksyn suoran väylälähetyksen törmäysriskin ja olen sammuttanut muut verkkoasiakkaat"
         }
       }
     },
     "error": {
-      "cannot_connect": "Kelvollista Balboa-tilaviestiä ei saatu. Tarkista osoite, portti, yhdyskäytävä ja muut asiakkaat."
+      "cannot_connect": "Kelvollista Balboa-tilaviestiä ei saatu. Tarkista osoite, portti, yhdyskäytävä ja muut asiakkaat.",
+      "direct_risk_required": "Suora RS485/TCP vaatii väylän törmäysriskin nimenomaisen hyväksynnän. Muuten valitse auto (vain luku) tai varmennettu väylän vuorottelua käyttävä yhteystapa."
     }
   }
 }

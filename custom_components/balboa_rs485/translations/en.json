@@ -214,25 +214,28 @@
     "step": {
       "reconfigure": {
         "title": "Change spa connection",
-        "description": "Keep this entry to preserve entity identity. A changed endpoint is checked passively before replacing the owned connection.",
+        "description": "Keep this entry to preserve entity identity. Validation only listens. direct-rs485-tcp is Direct RS485/TCP - fixed address (experimental): it sends without channel reservation or CTS, even for configuration queries. The spa panel still shares the bus; collisions remain possible. Stop other network clients. Select it only for an explicitly supervised compatibility trial.",
         "data": {
           "host": "Host",
           "port": "TCP port",
-          "protocol_mode": "Protocol mode"
+          "protocol_mode": "Connection mode",
+          "accept_direct_bus_risk": "I accept unarbitrated direct-bus writes and have stopped other network clients"
         }
       },
       "user": {
         "title": "Connect a Balboa spa",
-        "description": "Stop BWAlink and other clients before connecting. Auto only listens. Channel RS485 negotiates ownership (experimental); classic RS485 requires a verified classic bus. BWA TCP is only for an actual BWA Wi-Fi module, never a raw Elfin gateway. The connection check itself only listens. Physical controls remain disabled initially.",
+        "description": "Stop other network clients. Auto only listens; channel-rs485 negotiates ownership; classic-rs485 uses CTS. bwa-tcp is for an actual Balboa Wi-Fi module, not a raw bridge. direct-rs485-tcp is Direct RS485/TCP - fixed address (experimental): no reservation or CTS, even for configuration queries. The spa panel still shares the bus; collisions remain possible. Explicit risk acceptance is required. Validation only listens and physical controls start disabled.",
         "data": {
           "host": "Host",
           "port": "TCP port",
-          "protocol_mode": "Protocol mode"
+          "protocol_mode": "Connection mode",
+          "accept_direct_bus_risk": "I accept unarbitrated direct-bus writes and have stopped other network clients"
         }
       }
     },
     "error": {
-      "cannot_connect": "No valid Balboa status received. Check the host, port, gateway and competing clients."
+      "cannot_connect": "No valid Balboa status received. Check the host, port, gateway and competing clients.",
+      "direct_risk_required": "Direct RS485/TCP requires explicit acceptance of shared-bus collision risk. Otherwise select auto (read-only) or a verified arbitrated mode."
     }
   }
 }

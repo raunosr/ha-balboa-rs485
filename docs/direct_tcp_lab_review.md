@@ -59,5 +59,6 @@ The separate Linux/Home Assistant job is reported by the review branch's CI;
 local core results do not substitute for that job or physical acceptance.
 
 No production HA setting, restart, physical command or automation was changed.
-Promotion requires an explicit live-trial risk review, single-writer verification,
-bounded commands and independent readback. No new HA restart allowance exists.
+Promotion requires an explicit live-trial risk review, single-network-writer
+verification, bounded commands and independent readback. The owner subsequently
+authorized that separate trial on 2026-09-09; see `direct_tcp_live_review.md`.

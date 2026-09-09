@@ -14,13 +14,18 @@ class Mode(StrEnum):
     CLASSIC_RS485 = "classic-rs485"
     CHANNEL_RS485 = "channel-rs485"
     DIRECT_RS485_TCP_LAB = "direct-rs485-tcp-lab"
+    DIRECT_RS485_TCP = "direct-rs485-tcp"
+
+    @property
+    def direct(self) -> bool:
+        return self in (Mode.DIRECT_RS485_TCP, Mode.DIRECT_RS485_TCP_LAB)
 
 
-class DirectRs485TcpLabTransport:
+class DirectRs485TcpTransport:
     """Fixed 0x0A transmission experiment, not RS485 arbitration or hardware proof.
 
-    The connection enforces literal loopback endpoints. Pace complete receive
-    batches so a busy stream cannot turn this lab into a tight write loop.
+    Live use requires explicit risk acceptance; the lab mode remains loopback only.
+    Pace complete receive batches to prevent a tight write loop, not to claim CTS.
     """
 
     def __init__(self) -> None:
@@ -86,12 +91,12 @@ class BusPolicy:
         self.ready_count = 0
         self.channel_seen = False
         self._direct_blocked = False
-        self._direct = DirectRs485TcpLabTransport()
+        self._direct = DirectRs485TcpTransport()
         self._classic = ClassicRs485Transport()
         self.channel = ChannelRs485Transport(nonce=secrets.token_bytes(2))
 
     def observe(self, frame: Frame) -> None:
-        if self.requested == Mode.DIRECT_RS485_TCP_LAB and (
+        if self.requested.direct and (
             frame.family in (175, 191)
             and frame.message_type in (0xC4, 0xCA, 0xCC, 0x16)
             or frame.address == 10
@@ -129,7 +134,7 @@ class BusPolicy:
 
     @property
     def mode(self) -> Mode:
-        if self.requested == Mode.DIRECT_RS485_TCP_LAB:
+        if self.requested.direct:
             return (
                 self.requested
                 if self.status_seen and not self._direct_blocked
@@ -145,8 +150,10 @@ class BusPolicy:
 
     @property
     def supported(self) -> bool:
-        return self.mode in (Mode.BWA_TCP, Mode.CLASSIC_RS485, Mode.DIRECT_RS485_TCP_LAB) or (
-            self.mode == Mode.CHANNEL_RS485 and self.channel.ready and self.status_seen
+        return (
+            self.mode.direct
+            or self.mode in (Mode.BWA_TCP, Mode.CLASSIC_RS485)
+            or (self.mode == Mode.CHANNEL_RS485 and self.channel.ready and self.status_seen)
         )
 
     @property
@@ -168,7 +175,7 @@ class BusPolicy:
     ) -> bool:
         if self.mode == Mode.BWA_TCP:
             return BwaTcpTransport.allows_query()
-        if self.mode == Mode.DIRECT_RS485_TCP_LAB:
+        if self.mode.direct:
             return self._direct.allows_query(frames, now=now, residual=residual)
         if self.mode == Mode.CHANNEL_RS485:
             if not self.supported:

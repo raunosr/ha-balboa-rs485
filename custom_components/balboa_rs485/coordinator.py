@@ -16,7 +16,7 @@ from ._core.runtime import SpaRuntime
 from ._core.state.model import Control, Value
 from ._core.transport.connection import Snapshot
 from ._core.transport.policy import Mode
-from .const import CONF_CONTROLS, CONF_MODE, DOMAIN
+from .const import CONF_CONTROLS, CONF_DIRECT_RISK, CONF_MODE, DOMAIN
 from .prediction import PredictionController
 from .sessions import SessionController
 
@@ -34,6 +34,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             entry.data[CONF_HOST],
             entry.data[CONF_PORT],
             mode=Mode(entry.data[CONF_MODE]),
+            allow_unarbitrated_writes=entry.data.get(CONF_DIRECT_RISK) is True,
         )
         self._watcher: asyncio.Task[None] | None = None
         self._opened = False

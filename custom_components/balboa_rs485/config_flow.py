@@ -10,7 +10,7 @@ from homeassistant.helpers import selector
 
 from ._core.transport.connection import SpaConnection
 from ._core.transport.policy import Mode
-from .const import CONF_CONTROLS, CONF_FALLBACK, CONF_MODE, CONF_OUTDOOR, DOMAIN
+from .const import CONF_CONTROLS, CONF_DIRECT_RISK, CONF_FALLBACK, CONF_MODE, CONF_OUTDOOR, DOMAIN
 
 CONNECTION_SCHEMA = vol.Schema(
     {
@@ -18,11 +18,11 @@ CONNECTION_SCHEMA = vol.Schema(
         vol.Required(CONF_PORT, default=8899): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=65535)
         ),
-        # A laboratory transport must not become a production choice just because
-        # it was added to the core enum. Promotion needs a separate safety review.
+        # Keep the loopback-only experiment out of HA, even after explicit promotion.
         vol.Required(CONF_MODE, default=Mode.AUTO.value): vol.In(
             [mode.value for mode in Mode if mode != Mode.DIRECT_RS485_TCP_LAB]
         ),
+        vol.Optional(CONF_DIRECT_RISK, default=False): bool,
     }
 )
 
@@ -53,8 +53,16 @@ class BalboaConfigFlow(ConfigFlow, domain=DOMAIN):
         self, step: str, user_input: dict[str, Any] | None, entry: ConfigEntry | None = None
     ) -> ConfigFlowResult:
         errors = {}
-        if user_input is not None:
+        if (
+            user_input is not None
+            and user_input.get(CONF_MODE) == Mode.DIRECT_RS485_TCP.value
+            and user_input.get(CONF_DIRECT_RISK) is not True
+        ):
+            errors[CONF_DIRECT_RISK] = "direct_risk_required"
+        elif user_input is not None:
             data = {**user_input, CONF_HOST: user_input[CONF_HOST].strip().lower()}
+            if data[CONF_MODE] != Mode.DIRECT_RS485_TCP.value:
+                data[CONF_DIRECT_RISK] = False
             self._async_abort_entries_match(
                 {CONF_HOST: data[CONF_HOST], CONF_PORT: data[CONF_PORT]}
             )

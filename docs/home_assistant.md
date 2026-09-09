@@ -67,6 +67,13 @@ then remove only that integration directory and restart. Do not delete the whole
 
 ## Connection choices
 
+0.0.16 adds **Direct RS485/TCP – fixed address (experimental)**, ID
+`direct-rs485-tcp`, only for explicit supervised compatibility trials. The
+setup/reconfigure form requires risk acceptance: queries and commands bypass
+channel reservation/CTS and can collide with the spa panel. Stop other network
+clients. This is never an automatic fallback; existing entries are unchanged.
+Read the [trial and rollback policy](direct_tcp_live_review.md) first.
+
 For the tested gateway configuration and weak-WLAN measurements, see
 [EW11 settings](ew11_settings.md). The current device-page gaps versus the user's
 old MQTT integration are tracked in [native entity coverage](entity_parity.md).

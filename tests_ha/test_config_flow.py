@@ -31,6 +31,78 @@ async def test_user_can_open_configuration_form(hass):
     assert "host" in result["data_schema"].schema
 
 
+@pytest.mark.parametrize("source", ["user", "reconfigure"])
+async def test_direct_risk_gate_precedes_validation_and_preserves_existing_entry(hass, source):
+    from unittest.mock import AsyncMock, patch
+
+    entry = MockConfigEntry(
+        domain="balboa_rs485",
+        data={"host": "example.invalid", "port": 8899, "protocol_mode": "auto"},
+    )
+    context = {"source": source}
+    if source == "reconfigure":
+        entry.add_to_hass(hass)
+        context["entry_id"] = entry.entry_id
+    with patch(
+        "custom_components.balboa_rs485.config_flow.BalboaConfigFlow._validate_connection",
+        new_callable=AsyncMock,
+    ) as validate:
+        result = await hass.config_entries.flow.async_init(
+            "balboa_rs485",
+            context=context,
+            data={**entry.data, "protocol_mode": "direct-rs485-tcp"},
+        )
+        assert result["type"] == FlowResultType.FORM
+        assert result["errors"] == {"accept_direct_bus_risk": "direct_risk_required"}
+        validate.assert_not_called()
+        assert entry.data["protocol_mode"] == "auto"
+
+
+async def test_direct_reconfigure_preserves_owner_and_can_return_to_passive(hass, socket_enabled):
+    from tests.helpers import loopback_server
+    from tests.test_direct_tcp_lab import DirectPeer
+
+    peer = DirectPeer()
+    async with loopback_server(peer.serve) as port:
+        entry = MockConfigEntry(
+            domain="balboa_rs485",
+            title="Balboa Spa",
+            data={"host": "127.0.0.1", "port": port, "protocol_mode": "auto"},
+            options={"enable_controls": False, "fallback_heating_rate": 2},
+        )
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        try:
+            result = await hass.config_entries.flow.async_init(
+                "balboa_rs485",
+                context={"source": "reconfigure", "entry_id": entry.entry_id},
+                data={
+                    **entry.data,
+                    "protocol_mode": "direct-rs485-tcp",
+                    "accept_direct_bus_risk": True,
+                },
+            )
+            assert result["reason"] == "reconfigure_successful"
+            await hass.async_block_till_done()
+            await eventually(lambda: entry.runtime_data.runtime.metadata_complete)
+            assert entry.runtime_data.runtime.connection.snapshot.available
+            assert peer.max_active == 1 and peer.connections == 2
+            assert peer.physical == peer.allocations == 0
+            assert entry.options == {"enable_controls": False, "fallback_heating_rate": 2}
+            result = await hass.config_entries.flow.async_init(
+                "balboa_rs485",
+                context={"source": "reconfigure", "entry_id": entry.entry_id},
+                data={**entry.data, "protocol_mode": "auto"},
+            )
+            assert result["reason"] == "reconfigure_successful"
+            await hass.async_block_till_done()
+            assert entry.data["accept_direct_bus_risk"] is False
+            assert peer.physical == peer.allocations == 0
+            assert peer.max_active == 1
+        finally:
+            await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_configuration_requires_observed_status_and_is_passive(hass, socket_enabled):
     async with Simulator(port=0, interval=0.03) as simulator:
         result = await hass.config_entries.flow.async_init(

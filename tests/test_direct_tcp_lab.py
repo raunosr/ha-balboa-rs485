@@ -20,6 +20,29 @@ from .test_connection import FAST
 LAB = "direct-rs485-tcp-lab"
 
 
+@pytest.fixture(params=[Mode(LAB), Mode.DIRECT_RS485_TCP])
+def direct_mode(request):
+    return request.param
+
+
+@pytest.mark.parametrize("accepted", [False, None, 1, "yes"])
+def test_live_direct_requires_explicit_risk_acceptance_before_network_io(accepted):
+    with pytest.raises(ValueError, match="risk acceptance"):
+        SpaRuntime(
+            "203.0.113.10",
+            8899,
+            mode=Mode.DIRECT_RS485_TCP,
+            allow_unarbitrated_writes=accepted,
+        )
+
+
+def test_live_direct_accepts_remote_endpoint_only_with_explicit_permission():
+    conn = SpaConnection(
+        "203.0.113.10", 8899, mode=Mode.DIRECT_RS485_TCP, allow_unarbitrated_writes=True
+    )
+    assert not conn.running  # Construction must not open a connection.
+
+
 class DirectPeer:
     """Synthetic direct-address peer with no free negotiated channels.
 
@@ -119,8 +142,8 @@ def test_direct_mode_rejects_non_loopback_literals_before_any_network_io(host):
         SpaConnection(host, 8899, mode=Mode(LAB))
 
 
-def test_direct_policy_is_explicit_paced_and_preserves_unsupported_family_veto():
-    policy = BusPolicy(Mode(LAB))
+def test_direct_policy_is_explicit_paced_and_preserves_unsupported_family_veto(direct_mode):
+    policy = BusPolicy(direct_mode)
     status = load_status_fixture()
     assert not policy.supported
     policy.observe(status)
@@ -142,17 +165,19 @@ def test_direct_policy_is_explicit_paced_and_preserves_unsupported_family_veto()
 
 
 @pytest.mark.parametrize("item", [17, 32, 34])
-def test_direct_policy_stops_if_other_client_or_gateway_echo_uses_fixed_address(item):
-    policy = BusPolicy(Mode(LAB))
+def test_direct_policy_stops_if_other_client_or_gateway_echo_uses_fixed_address(item, direct_mode):
+    policy = BusPolicy(direct_mode)
     policy.observe(load_status_fixture())
     policy.observe(Frame(10, 191, item, b"\0\0"))
     assert not policy.supported
 
 
-async def test_direct_recovers_beyond_three_disconnects_without_allocating_channels():
+async def test_direct_recovers_beyond_three_disconnects_without_allocating_channels(direct_mode):
     peer = DirectPeer(drop_connections=4)
     async with loopback_server(peer.serve) as port:
-        async with SpaConnection("127.0.0.1", port, mode=Mode(LAB), timing=FAST) as conn:
+        async with SpaConnection(
+            "127.0.0.1", port, mode=direct_mode, timing=FAST, allow_unarbitrated_writes=True
+        ) as conn:
             snapshot = await conn.wait_for(lambda s: s.available, timeout=4)
             assert snapshot.epoch == 5 and snapshot.recoveries == 4
             assert snapshot.assignment_requests == peer.allocations == 0
@@ -162,10 +187,12 @@ async def test_direct_recovers_beyond_three_disconnects_without_allocating_chann
     assert peer.active == 0 and not conn.running
 
 
-async def test_direct_zombie_socket_closes_and_resynchronizes_without_reload():
+async def test_direct_zombie_socket_closes_and_resynchronizes_without_reload(direct_mode):
     peer = DirectPeer()
     async with loopback_server(peer.serve) as port:
-        async with SpaConnection("127.0.0.1", port, mode=Mode(LAB), timing=FAST) as conn:
+        async with SpaConnection(
+            "127.0.0.1", port, mode=direct_mode, timing=FAST, allow_unarbitrated_writes=True
+        ) as conn:
             first = await conn.wait_for(lambda s: s.available, timeout=3)
             peer.silence = True
             await conn.wait_for(lambda s: not s.available, timeout=2)
@@ -175,13 +202,14 @@ async def test_direct_zombie_socket_closes_and_resynchronizes_without_reload():
             assert peer.max_active == 1
 
 
-async def test_direct_delayed_commit_keeps_observed_state_until_confirmation():
+async def test_direct_delayed_commit_keeps_observed_state_until_confirmation(direct_mode):
     peer = DirectPeer(commit_delay=0.08, reply_delay=0.04)
     async with loopback_server(peer.serve) as port:
         async with SpaRuntime(
             "127.0.0.1",
             port,
-            mode=Mode(LAB),
+            mode=direct_mode,
+            allow_unarbitrated_writes=True,
             timing=FAST,
             engine=CommandEngine(confirmation_guard=0.02),
         ) as runtime:
@@ -195,10 +223,12 @@ async def test_direct_delayed_commit_keeps_observed_state_until_confirmation():
             assert peer.physical == 1 and peer.allocations == 0
 
 
-async def test_direct_cancellation_stops_reconnects_and_closes_owned_socket():
+async def test_direct_cancellation_stops_reconnects_and_closes_owned_socket(direct_mode):
     peer = DirectPeer(drop_connections=100)
     async with loopback_server(peer.serve) as port:
-        conn = SpaConnection("127.0.0.1", port, mode=Mode(LAB), timing=FAST)
+        conn = SpaConnection(
+            "127.0.0.1", port, mode=direct_mode, timing=FAST, allow_unarbitrated_writes=True
+        )
         async with conn:
             await conn.wait_for(lambda s: s.epoch >= 2, timeout=2)
         count = peer.connections
@@ -218,13 +248,18 @@ async def test_direct_cancellation_stops_reconnects_and_closes_owned_socket():
     ],
 )
 async def test_direct_ambiguous_toggle_resyncs_and_never_replays_raw_command(
-    reset, control, desired, expected
+    reset, control, desired, expected, direct_mode
 ):
     peer = DirectPeer(lose_confirmation=not reset, reset_after_write=reset)
     engine = CommandEngine(confirmation_guard=0.02, confirmation_timeout=0.15, resync_settle=0.06)
     async with loopback_server(peer.serve) as port:
         async with SpaRuntime(
-            "127.0.0.1", port, mode=Mode(LAB), timing=FAST, engine=engine
+            "127.0.0.1",
+            port,
+            mode=direct_mode,
+            timing=FAST,
+            engine=engine,
+            allow_unarbitrated_writes=True,
         ) as runtime:
             await runtime.connection.wait_for(lambda s: s.available, timeout=3)
             intent = runtime.request(control, desired)

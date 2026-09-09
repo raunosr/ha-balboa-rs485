@@ -70,6 +70,8 @@ async def async_get_config_entry_diagnostics(
             "port": REDACTED,
             "state": snapshot.state.value,
             "mode": snapshot.mode.value,
+            "requested_mode": runtime.connection.requested_mode.value,
+            "direct_unarbitrated": runtime.connection.requested_mode.direct,
             "candidate": snapshot.candidate.value,
             "available": snapshot.available,
             "epoch": snapshot.epoch,

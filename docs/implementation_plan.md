@@ -20,6 +20,8 @@ Phase 7 or migrate automations before these remaining gates are reviewed.
 The user subsequently authorized a loopback-only fixed-address direct RS485/TCP
 experiment. Its implementation, naming and validation are recorded in
 `docs/direct_tcp_lab_review.md`. This does not promote the mode to production.
+The later owner-authorized 0.0.16 live promotion/trial is recorded separately in
+`docs/direct_tcp_live_review.md`; short compatibility tests do not close Phase 11.
 The 2026-09-07 MQTT inventory and revised dual-range/session UX are recorded in
 `docs/phase4b_design.md`. The complete 0.0.14 native-entity implementation includes
 range-aware restoration, filters and guarded maintenance controls. Production

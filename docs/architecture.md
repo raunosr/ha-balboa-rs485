@@ -163,3 +163,7 @@ experiment. It does not negotiate channels or claim CTS ownership, and is not a
 fallback for any production mode. The observed-state, epoch and command-confirmation
 invariants still apply. See `direct_tcp_lab_review.md` for endpoint enforcement,
 scope, risk and the separate hardware promotion gate.
+
+Version 0.0.16 separately exposes `direct-rs485-tcp` with explicit core and HA
+risk acceptance, never as a fallback. It shares the tested policy without removing
+the lab's endpoint boundary. See `direct_tcp_live_review.md`.

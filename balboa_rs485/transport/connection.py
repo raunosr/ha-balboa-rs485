@@ -114,6 +114,7 @@ class SpaConnection:
         port: int,
         *,
         mode: Mode = Mode.AUTO,
+        allow_unarbitrated_writes: bool = False,
         timing: Timing = _DEFAULT_TIMING,
         jitter: Callable[[], float] = random.random,
         participant: Participant | None = None,
@@ -123,6 +124,10 @@ class SpaConnection:
         self.host, self.port, self.requested_mode = host, port, Mode(mode)
         if self.requested_mode == Mode.DIRECT_RS485_TCP_LAB and host not in ("127.0.0.1", "::1"):
             raise ValueError("Direct RS485/TCP lab requires a literal loopback endpoint")
+        if self.requested_mode == Mode.DIRECT_RS485_TCP and allow_unarbitrated_writes is not True:
+            raise ValueError(
+                "Direct RS485/TCP requires explicit unarbitrated-write risk acceptance"
+            )
         self.timing = timing
         self._participant = participant
         self._backoff = Backoff(timing, jitter=jitter)
@@ -389,7 +394,8 @@ class SpaConnection:
                 if (
                     self._policy.channel_seen
                     and not previous_channel
-                    and self.requested_mode not in (Mode.CHANNEL_RS485, Mode.DIRECT_RS485_TCP_LAB)
+                    and self.requested_mode != Mode.CHANNEL_RS485
+                    and not self.requested_mode.direct
                 ):
                     self._pending = None
                     self._configuration = None
@@ -553,7 +559,7 @@ class SpaConnection:
                                 outbound,
                                 asyncio.get_running_loop().time(),
                                 None
-                                if self._policy.mode in (Mode.BWA_TCP, Mode.DIRECT_RS485_TCP_LAB)
+                                if self._policy.mode == Mode.BWA_TCP or self._policy.mode.direct
                                 else now,
                             )
                             async with asyncio.timeout(self.timing.cts_window):
