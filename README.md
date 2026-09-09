@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.16.** Native observations, controller diagnostics,
+**Experimental release 0.0.17.** Native observations, controller diagnostics,
 named Pump 1 speeds, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -16,12 +16,15 @@ initial learning, optional outdoor temperature and error metrics.
 
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
 passed, including Pump 1 high-to-low on 0.0.14 and filter readback/restoration on
-0.0.15. Low-to-High and negotiated-channel recovery did not pass. Version 0.0.16
+0.0.15. Low-to-High and negotiated-channel recovery did not pass on that version. Version 0.0.16
 adds an explicitly selected **Direct RS485/TCP – fixed address (experimental)**
 mode for supervised compatibility trials. It does not reserve a channel or wait
 for CTS, so collisions with the panel remain possible; it is never an automatic
 fallback. Risk acceptance and stopping other network clients are required.
 See the [direct-mode trial review](docs/direct_tcp_live_review.md).
+Its bounded real-spa light and High/Low restoration tests passed, including two
+automatic recoveries after unconfirmed commands; first-attempt reliability is
+not established. The trial used one HA restart and preserved all 54 entity IDs.
 Other advanced controls and long-duration weak-network recovery still need
 hardware acceptance. Negotiated mode retains its finite three-allocation budget.
 No automation migration is performed.
@@ -30,6 +33,12 @@ stored in the spa. Do not use experimental controls unattended.
 
 See the [0.0.15 filter confirmation review](docs/filter_confirmation_review.md)
 for reproducible laboratory failures, the scoped correction and remaining gates.
+
+0.0.17 corrects command admission during known maintenance reminders and makes
+connection cleanup independent of entity-platform unload success. Historical log
+entries are labelled explicitly and retained across connection gaps. It does not
+establish the cause of a reported whole-HA crash. See the
+[reliability review](docs/reliability_0_0_17.md) for tests and remaining limits.
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.

@@ -111,7 +111,7 @@
       "pump_mode": {"name":"Pumpun {index} tila","state":{"off":"Pois","circulation":"Kierto (1)","jets":"Poreet (2)","on":"Päällä"}}
     },
     "sensor": {
-      "latest_fault": {"name": "Viimeisin historiallinen vika"},
+      "latest_fault": {"name": "Viimeisin historiakirjaus", "state": {"priming_mode": "Priming (historiakirjaus)"}},
       "fault_log_entries": {"name": "Vikahistorian merkinnät"},
       "filter_cycle_duration": {"name": "Suodatusjakson {index} kesto"},
       "channel": {"name": "Kanava"},
@@ -121,7 +121,7 @@
       "heater_state": {"name":"Lämmittimen tila","state":{"off":"Pois","heating":"Lämmittää","waiting":"Odottaa"}},
       "heating_mode": {"name":"Lämmitystila","state":{"ready":"Ready (valmis)","rest":"Rest (lepo)","ready_in_rest":"Tilapäinen Ready lepotilassa"}},
       "temperature_range": {"name":"Lämpötila-alue","state":{"low":"Low (ylläpito)","high":"High (kylpy)"}},
-      "reminder": {"name":"Muistutus","state":{"none":"Ei muistutusta","clean_filter":"Puhdista suodatin","check_ph":"Tarkista pH","check_sanitizer":"Tarkista desinfiointiaine","unrecognized":"Tunnistamaton muistutus"}},
+      "reminder": {"name":"Muistutus","state":{"none":"Ei muistutusta","change_filter":"Vaihda suodatin","clean_filter":"Puhdista suodatin","check_ph":"Tarkista pH","check_sanitizer":"Tarkista desinfiointiaine","unrecognized":"Tunnistamaton muistutus"}},
       "spa_clock": {"name":"Altaan kello"},
       "clock_format": {"name":"Kellon näyttötapa","state":{"12h":"12 tuntia","24h":"24 tuntia"}},
       "water_temperature": {"name": "Veden lämpötila"},

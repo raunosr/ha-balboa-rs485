@@ -44,9 +44,12 @@ async def test_circulation_and_latest_fault_are_native_observations(hass, socket
             )
             await eventually(lambda: entry.runtime_data.runtime.state.fault.count == 1)
             await eventually(
-                lambda: hass.states.get("sensor.balboa_spa_latest_fault").state == "flow_failed"
+                lambda: (
+                    hass.states.get("sensor.balboa_spa_latest_historical_log_entry").state
+                    == "flow_failed"
+                )
             )
-            fault = hass.states.get("sensor.balboa_spa_latest_fault")
+            fault = hass.states.get("sensor.balboa_spa_latest_historical_log_entry")
             assert fault.attributes["historical"] is True
             assert fault.attributes["code"] == 17
             assert hass.states.get("sensor.balboa_spa_fault_log_entries").state == "1"

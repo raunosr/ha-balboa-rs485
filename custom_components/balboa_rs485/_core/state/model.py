@@ -69,15 +69,13 @@ class SpaState:
     def controls_safe(self) -> bool:
         # Unknown operating modes, hold, priming and unvalidated lock bits inhibit controls.
         data = self.status.frame.payload
-        # Documented clean-filter reminder, independently observed on BP6013G2.
-        # Do not clear the reminder or generalize this to faults/unknown notices.
-        normal_or_filter_reminder = data[1] == 0 or (
-            data[1] == 3 and data[6] == 4 and data[18] == 1
-        )
+        # Routine maintenance reminders are not operating-mode faults. Admission
+        # never clears them, nor permits an unknown code or fault notification.
+        normal_or_reminder = data[1] == 0 or self.status.routine_reminder
         return (
             self.available
             and data[0] == 0
-            and normal_or_filter_reminder
+            and normal_or_reminder
             and not data[9] & 0xF0
             and not data[21] & 8
         )
@@ -94,9 +92,7 @@ class SpaState:
             return (
                 self.available
                 and data[0] == 0
-                and data[1] == 3
-                and data[6] in (4, 9, 10)
-                and data[18] == 1
+                and self.status.routine_reminder
                 and not data[9] & 0xF0
                 and not data[21] & 8
             )
@@ -104,14 +100,34 @@ class SpaState:
             control in (Control.HOLD, Control.NORMAL_OPERATION)
             and self.available
             and data[0] == 5
-            and (data[1] == 0 or data[1] == 3 and data[6] == 4 and data[18] == 1)
+            and (data[1] == 0 or self.status.routine_reminder)
             and not data[9] & 0xF0
             and not data[21] & 8
         )
 
     @property
     def priming(self) -> bool:
-        return self.status.frame.payload[1] == 1
+        return self.status.priming
+
+    @property
+    def controls_blocked_reason(self) -> str | None:
+        """Explain general admission without labelling historical faults as active."""
+        if self.controls_safe:
+            return None
+        data = self.status.frame.payload
+        if not self.available:
+            return "state_not_synchronized"
+        if self.priming:
+            return "priming"
+        if self.hold:
+            return "hold"
+        if self.status.panel_locked:
+            return "panel_locked"
+        if self.status.settings_locked:
+            return "settings_locked"
+        if data[1] == 3 and not self.status.routine_reminder:
+            return f"unsupported_notification_{data[6]}"
+        return "unsupported_operating_state"
 
     @property
     def hold(self) -> bool:
@@ -256,7 +272,10 @@ class SpaState:
 
     def validate(self, control: Control, desired: Value) -> None:
         if not isinstance(control, Control) or not self.safe_for(control):
-            raise ValueError("Controls require a fresh synchronized normal operating state")
+            raise ValueError(
+                "Controls require a fresh synchronized normal operating state"
+                f" ({self.controls_blocked_reason or 'control_not_permitted'})"
+            )
         if control == Control.CLOCK_TIME:
             if type(desired) is not int or not 0 <= desired < 1440 or self.status.clock is None:
                 raise ValueError("Clock must be 0..1439 minutes with known observed clock")

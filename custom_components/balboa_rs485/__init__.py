@@ -46,10 +46,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: BalboaConfigEntry) -> bo
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: BalboaConfigEntry) -> bool:
-    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        return False
+    # Relinquish the physical bus even if HA cannot unload an entity platform.
+    # Returning early on a failed platform left a live, invisible writer behind.
     await entry.runtime_data.async_close()
-    return True
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: BalboaConfigEntry) -> None:

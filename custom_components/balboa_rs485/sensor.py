@@ -12,12 +12,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from ._core.protocol.messages import (
     FAULT_NAMES,
+    REMINDER_NAMES,
     FaultLogMessage,
     HeatMode,
     HeatState,
@@ -84,7 +85,7 @@ STATUS_SENSORS = (
         translation_key="reminder",
         icon="mdi:bell-alert-outline",
         device_class=SensorDeviceClass.ENUM,
-        options=["none", "clean_filter", "check_ph", "check_sanitizer", "unrecognized"],
+        options=["none", *REMINDER_NAMES.values(), "unrecognized"],
         value_fn=lambda s: "unrecognized" if s.reminder == "unknown" else s.reminder,
     ),
     StatusDescription(
@@ -171,6 +172,8 @@ class FaultSensor(BalboaEntity, SensorEntity):
         key = "fault_log_entries" if count else "latest_fault"
         super().__init__(coordinator, key)
         self.count = count
+        state = coordinator.runtime.state
+        self._last_fault = state.fault if state else None
         self._attr_translation_key = key
         if not count:
             self._attr_device_class = SensorDeviceClass.ENUM
@@ -179,11 +182,18 @@ class FaultSensor(BalboaEntity, SensorEntity):
     @property
     def fault(self) -> FaultLogMessage | None:
         state = self.coordinator.runtime.state
-        return state.fault if state else None
+        return state.fault if state and state.fault is not None else self._last_fault
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        # A connection gap cannot make an already observed historical entry into
+        # a new alarm. Keep history visible; real-time priming is a separate entity.
+        self._last_fault = self.fault
+        super()._handle_coordinator_update()
 
     @property
     def available(self) -> bool:
-        return super().available and self.fault is not None
+        return self.coordinator.last_update_success and self.fault is not None
 
     @property
     def native_value(self) -> int | str | None:
@@ -325,6 +335,14 @@ class ConnectionSensor(BalboaEntity, SensorEntity):
             "protocol_mode": snapshot.mode.value,
             "protocol_candidate": snapshot.candidate.value,
             "controls_enabled": self.coordinator.controls_enabled,
+            "controls_safe": bool(
+                self.coordinator.runtime.state and self.coordinator.runtime.state.controls_safe
+            ),
+            "controls_blocked_reason": (
+                self.coordinator.runtime.state.controls_blocked_reason
+                if self.coordinator.runtime.state
+                else "not_synchronized"
+            ),
             "status_stale": snapshot.health.status_stale,
             "channel_failure": snapshot.channel_failure,
             "observations_available": observed is not None,

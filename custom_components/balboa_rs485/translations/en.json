@@ -111,7 +111,7 @@
       "pump_mode": {"name":"Pump {index} mode","state":{"off":"Off","circulation":"Circulation (1)","jets":"Jets (2)","on":"On"}}
     },
     "sensor": {
-      "latest_fault": {"name": "Latest fault"},
+      "latest_fault": {"name": "Latest historical log entry", "state": {"priming_mode": "Priming (historical entry)"}},
       "fault_log_entries": {"name": "Fault log entries"},
       "filter_cycle_duration": {"name": "Filter cycle {index} duration"},
       "channel": {"name": "Channel"},
@@ -121,7 +121,7 @@
       "heater_state": {"name":"Heater state","state":{"off":"Off","heating":"Heating","waiting":"Waiting"}},
       "heating_mode": {"name":"Heating mode","state":{"ready":"Ready","rest":"Rest","ready_in_rest":"Ready in Rest"}},
       "temperature_range": {"name":"Temperature range","state":{"low":"Low (maintenance)","high":"High (bathing)"}},
-      "reminder": {"name":"Reminder","state":{"none":"None","clean_filter":"Clean filter","check_ph":"Check pH","check_sanitizer":"Check sanitizer","unrecognized":"Unrecognized reminder"}},
+      "reminder": {"name":"Reminder","state":{"none":"None","change_filter":"Replace filter","clean_filter":"Clean filter","check_ph":"Check pH","check_sanitizer":"Check sanitizer","unrecognized":"Unrecognized reminder"}},
       "spa_clock": {"name":"Spa clock"},
       "clock_format": {"name":"Clock format","state":{"12h":"12-hour","24h":"24-hour"}},
       "water_temperature": {"name": "Water temperature"},

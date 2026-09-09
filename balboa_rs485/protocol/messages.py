@@ -51,6 +51,10 @@ FAULT_NAMES = {
     37: "standby_mode",
 }
 
+# Standard maintenance reminders, not active fault codes. Code 3 is "Change the
+# filter" in Balboa's TP700/BP user guide; 4/9/10 also have wire-source agreement.
+REMINDER_NAMES = {3: "change_filter", 4: "clean_filter", 9: "check_sanitizer", 10: "check_ph"}
+
 
 @dataclass(frozen=True, slots=True)
 class ReadyMessage:
@@ -137,7 +141,12 @@ class StatusMessage:
         code = self.reminder_code
         if code is None or code == 0:
             return "none"
-        return {4: "clean_filter", 10: "check_ph", 9: "check_sanitizer"}.get(code, "unknown")
+        return REMINDER_NAMES.get(code, "unknown")
+
+    @property
+    def routine_reminder(self) -> bool:
+        """Known maintenance notification, with no fault/unknown notification flags."""
+        return self.reminder_code in REMINDER_NAMES and self.frame.payload[18] == 1
 
 
 @dataclass(frozen=True, slots=True)

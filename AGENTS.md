@@ -30,14 +30,19 @@ collaborators, license changes or unrelated public releases without user directi
 The owner explicitly selected MIT on 2026-09-08. Preserve LICENSE in the repository
 and HACS-distributed component; the package test enforces matching notices.
 
-Public HACS publication and scoped installation cleanup are complete. The current
-task is native-control hardware acceptance and its bounded filter-confirmation
-correction; see `docs/filter_confirmation_review.md`. The user explicitly deferred
+Public HACS publication and scoped installation cleanup are complete. The previous
+fixed-address direct-mode compatibility trial passed on v0.0.16; see
+`docs/direct_tcp_live_review.md` for its bounded evidence and remaining gates.
+The user explicitly deferred
 all automation migration/cleanup until the integration is complete. Do not resume
-historical HA startup diagnosis. The latest single-restart HACS activation allowance
-has been consumed (1/1). On 2026-09-09 the user authorized preparing and testing
-the explicit experimental direct RS485/TCP mode, with a NEW maximum of two HA
-Core restarts: 0/2 consumed. Record dispatches in the private live-trial checkpoint.
+historical HA startup diagnosis. The current priority is the v0.0.16 reliability
+regression: routine reminders block controls, historical priming looks active,
+clock Activity noise, and failed unload retains the bus connection. Energy work
+is explicitly deferred and retained privately. See `docs/reliability_0_0_17.md`.
+The user's NEW 2026-09-09 bug-fix allowance is TWO HA Core restarts, 0/2 used
+at the pre-deployment checkpoint. This replaces, and must not be added to, old
+trial allowances. Reconcile against the private deployment ledger before acting.
+Use the normal restart tool only; record actual accepted dispatches privately.
 This does not authorize spa power cycling, failure injection on production or
 automation changes. The panel remains a bus participant; low client count is not
 collision-proof arbitration. Verify BWALink stopped immediately before the trial.
@@ -45,7 +50,10 @@ Run failure injection in the lab.
 Read `docs/bwalink_transport_review.md` before further recovery work. The rolling
 allocation-window draft was rejected before deployment: pacing does not prevent
 finite controller channel-pool exhaustion. Do not silently add repeated allocations
-or BWALink-style direct writes. Filter acceptance passed; dual-range/recovery did not.
+or unacknowledged direct writes. Filter acceptance passed on v0.0.15; native
+High/Low restoration and two automatic recoveries passed in the explicit v0.0.16
+direct trial. First-attempt reliability, that mode's bathing-session restoration,
+other advanced controls and long soak remain unaccepted. Do not migrate automations.
 Keep the Python core independent of Home Assistant. Never send unknown messages
 to hardware, treat an open socket as availability, or replay raw toggles.
 Use observed state, not optimistic updates. Run tests and lint before delivery.
