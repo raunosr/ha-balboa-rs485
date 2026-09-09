@@ -150,6 +150,7 @@ class Simulator:
         self.clock_24h = False
         self.hold = False
         self.reminder_code: int | None = None
+        self.reminder_queue: list[int] = []
         self._reminder_acknowledged = False
         self.physical_records: deque[QueryRecord] = deque(maxlen=128)
         self._drop_status_connection: int | None = None
@@ -436,7 +437,9 @@ class Simulator:
                                 self.hold = not self.hold
                                 handled = True
                             elif item == 3:
-                                self.reminder_code = None
+                                self.reminder_code = (
+                                    self.reminder_queue.pop(0) if self.reminder_queue else None
+                                )
                                 self._reminder_acknowledged = True
                                 handled = True
                             elif item == 1:

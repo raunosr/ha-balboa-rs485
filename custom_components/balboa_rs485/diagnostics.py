@@ -35,6 +35,7 @@ def _transaction(item: Transaction, now: float) -> dict[str, Any]:
         "intent_id": item.action.intent.id,
         "control": item.action.intent.control.value,
         "desired": _value(item.action.intent.desired),
+        "requested_reminder_code": item.action.intent.reminder_code,
         "starting_value": _value(item.starting_value),
         "resulting_value": _value(item.resulting_value),
         "epoch": item.action.epoch,
