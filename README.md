@@ -39,6 +39,10 @@ connection cleanup independent of entity-platform unload success. Historical log
 entries are labelled explicitly and retained across connection gaps. It does not
 establish the cause of a reported whole-HA crash. See the
 [reliability review](docs/reliability_0_0_17.md) for tests and remaining limits.
+The 0.0.17 bounded native-control test and normal entry reload passed with settings
+restored, but one command needed automatic recovery. Global clock Activity noise
+can be filtered; the device-specific view requires a separate history-retention
+choice. This remains experimental, not a claim of unattended reliability.
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.
