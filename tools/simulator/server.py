@@ -135,6 +135,7 @@ class Simulator:
         self.channel_lab = channel_lab
         self.pump_states = [0] * 6
         self.pump1_forced_low = False
+        self.dedicated_circulation_pump = True
         self.physical_commands = 0
         self._profile_targets = {False: 27.0, True: 38.0}
         self.light_states = [False, False]
@@ -304,7 +305,7 @@ class Simulator:
                 payload[12] = self.pump_states[4] | self.pump_states[5] << 2
                 payload[5] = self.heat_mode
                 payload[10] = (payload[10] & ~4) | (4 if self.high_range else 0)
-                payload[13] = 2 | (self.blower << 2)
+                payload[13] = (2 if self.dedicated_circulation_pump else 0) | (self.blower << 2)
                 payload[15] = (
                     int(self.mister)
                     | (8 if self.aux_states[0] else 0)
@@ -515,6 +516,10 @@ class Simulator:
                         single_speed=self.scenario == "single-speed-pump",
                         accessories=self.scenario == "accessories",
                     )
+                    if query == Query.CAPABILITIES and not self.dedicated_circulation_pump:
+                        payload = bytearray(response.payload)
+                        payload[3] &= 0x3F
+                        response = replace(response, payload=bytes(payload))
                     if query == Query.FILTERS:
                         response = replace(response, payload=self.filter_payload)
                     if query == Query.FAULT:

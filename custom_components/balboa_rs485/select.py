@@ -72,8 +72,10 @@ class HeatingPolicySelect(BalboaEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         status = self.coordinator.data.observed_status
-        if status is None or status.heat_mode not in (HeatMode.READY, HeatMode.REST):
+        if status is None or status.heat_mode == HeatMode.UNKNOWN:
             return None
+        if status.heat_mode == HeatMode.READY_IN_REST:
+            return "rest"  # Temporary Jets-triggered heating does not change the REST policy.
         return status.heat_mode.name.lower()
 
     async def async_select_option(self, option: str) -> None:
@@ -88,10 +90,12 @@ class HeatingPolicySelect(BalboaEntity, SelectEntity):
 
 
 class PumpModeSelect(BalboaEntity, SelectEntity):
-    """Alias of Pump 1 fan, not a second physical device or a second socket."""
+    """Hidden compatibility alias of the Pump 1 slider; stable service target."""
 
     _attr_translation_key = "pump_mode"
     _attr_icon = "mdi:pump"
+    _attr_entity_registry_visible_default = False
+    _pump_slider_alias = True
 
     def __init__(self, coordinator: SpaCoordinator, control: Control) -> None:
         super().__init__(coordinator, f"{control.value}_mode")

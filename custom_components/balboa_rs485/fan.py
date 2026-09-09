@@ -32,6 +32,9 @@ class SpaFan(BalboaControlEntity, FanEntity):
 
     def __init__(self, coordinator: SpaCoordinator, control: Control) -> None:
         super().__init__(coordinator, control)
+        if control == Control.PUMP1:
+            self._pump_slider_alias = True
+            self._attr_entity_registry_visible_default = False
         if control is Control.BLOWER:
             self._attr_translation_key = "blower"
         else:

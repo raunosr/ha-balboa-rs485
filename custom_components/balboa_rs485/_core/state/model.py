@@ -9,6 +9,7 @@ from ..protocol.messages import (
     FaultLogMessage,
     FilterCyclesMessage,
     HeatMode,
+    HeatState,
     SetupMessage,
     StatusMessage,
     TemperatureUnit,
@@ -149,6 +150,50 @@ class SpaState:
     @property
     def has_circulation_pump(self) -> bool:
         return self.configuration.capabilities.frame.payload[3] >> 6 == 2
+
+    @property
+    def pump1_is_circulation(self) -> bool:
+        """Only the known non-circ, two-speed configuration establishes this role."""
+        return self.configuration.capabilities.frame.payload[3] >> 6 == 0 and self.options(
+            Control.PUMP1
+        ) == (PumpState.OFF, PumpState.LOW, PumpState.HIGH)
+
+    @property
+    def pump1_circulation_reason(self) -> str | None:
+        """Conservative inhibition, not an exhaustive automatic-cycle detector.
+
+        Non-circ systems use Pump 1 LOW for other pumps, heating and filtration.
+        Temperature polling/cleanup may have no separately identifiable status.
+        Never infer a dedicated pump's absence from an unknown capability value.
+        """
+        if not self.pump1_is_circulation or self.value(Control.PUMP1) not in (
+            PumpState.LOW,
+            PumpState.HIGH,
+        ):
+            return None
+        if any(
+            self.value(Control(f"pump{index}")) in (PumpState.ON, PumpState.LOW, PumpState.HIGH)
+            for index in range(2, 7)
+        ):
+            return "other_pump"
+        blower = self.value(Control.BLOWER)
+        if isinstance(blower, int) and blower > 0:
+            return "blower"
+        if self.status.heat_state == HeatState.HEATING:
+            return "heating"
+        # Ready-in-Rest can remain displayed after reaching the target; the
+        # manual only requires LOW until then (or its one-hour timeout).
+        # The mode byte alone is not evidence that an OFF request is impossible.
+        if (
+            self.status.heat_mode == HeatMode.READY_IN_REST
+            and self.current_temperature is not None
+            and self.target_temperature is not None
+            and self.current_temperature < self.target_temperature
+        ):
+            return "ready_in_rest"
+        if any(value is True for value in self.status.filter_running_consensus):
+            return "filtration"
+        return None
 
     @property
     def voltage(self) -> int | None:
@@ -316,3 +361,12 @@ class SpaState:
             valid_type = type(desired) is bool
         if not valid_type or desired not in self.options(control) or self.value(control) is None:
             raise ValueError("Unsupported desired value, missing setup, or unknown physical state")
+        if (
+            control == Control.PUMP1
+            and desired == PumpState.OFF
+            and (reason := self.pump1_circulation_reason) is not None
+        ):
+            raise ValueError(
+                f"Pump 1 circulation is required ({reason}); select speed 1 to stop jets. "
+                "The spa controller decides when automatic circulation stops."
+            )

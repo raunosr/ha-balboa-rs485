@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ha-balboa-rs485"
-version = "0.0.18"
+version = "0.0.19"
 description = "Experimental local Balboa RS485 spa integration: native controls, bathing sessions and diagnostics"
 readme = "README.md"
 license = "MIT"

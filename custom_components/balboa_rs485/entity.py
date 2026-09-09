@@ -1,8 +1,10 @@
 """Stable entry-scoped identity and observed availability for native entities."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from homeassistant.core import callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -15,6 +17,7 @@ from .coordinator import BalboaConfigEntry, SpaCoordinator
 
 class BalboaEntity(CoordinatorEntity[SpaCoordinator]):
     _attr_has_entity_name = True
+    _pump_slider_alias = False
 
     def __init__(self, coordinator: SpaCoordinator, key: str) -> None:
         super().__init__(coordinator)
@@ -30,6 +33,28 @@ class BalboaEntity(CoordinatorEntity[SpaCoordinator]):
             self._attr_device_info["sw_version"] = ".".join(
                 str(part) for part in configuration.information.software_version
             )
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if not self._pump_slider_alias:
+            return
+        # One-time presentation migration only: stable IDs and service targets
+        # remain enabled. Store the marker on this entity, not in config options;
+        # a user who unhides the alias later must not have it hidden again.
+        registry = er.async_get(self.hass)
+        entity = registry.async_get(self.entity_id)
+        if entity is None or entity.config_entry_id != self.coordinator.entry.entry_id:
+            return
+        options: Mapping[str, Any] = entity.options.get(DOMAIN, {})
+        if options.get("pump_slider_migrated"):
+            return
+        if entity.hidden_by is None:
+            registry.async_update_entity(
+                self.entity_id, hidden_by=er.RegistryEntryHider.INTEGRATION
+            )
+        registry.async_update_entity_options(
+            self.entity_id, DOMAIN, {**options, "pump_slider_migrated": True}
+        )
 
     @property
     def available(self) -> bool:

@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from ..protocol.frames import Frame
-from ..state.model import Control, SpaState, Value
+from ..state.model import Control, PumpState, SpaState, Value
 from .planning import plan
 
 
@@ -253,23 +253,36 @@ class CommandEngine:
             # fresh final desired value is equally sufficient; never toggle it
             # away merely to force the hypothetical intermediate transition.
             and (
-                self._reminder_acknowledged(pending.action.intent, state)
-                if pending.action.intent.control == Control.ACK_REMINDER
-                else state.value(pending.action.intent.control)
-                in (pending.action.expected, pending.action.intent.desired)
+                self._pump_off_retained_low(pending, state)
+                or (
+                    self._reminder_acknowledged(pending.action.intent, state)
+                    if pending.action.intent.control == Control.ACK_REMINDER
+                    else state.value(pending.action.intent.control)
+                    in (pending.action.expected, pending.action.intent.desired)
+                )
             )
         ):
+            retained_low = self._pump_off_retained_low(pending, state)
+            reason = (
+                "Controller kept Pump 1 at circulation speed; OFF was not reached. "
+                "Jets are stopped; automatic circulation is controlled by the spa."
+                if retained_low
+                else None
+            )
             self._history[-1] = replace(
                 pending,
-                result=Stage.VERIFIED,
+                result=Stage.FAILED if retained_low else Stage.VERIFIED,
                 resulting_value=state.value(pending.action.intent.control),
                 completed_at=now,
+                reason=reason,
             )
             self._inflight = None
-            if pending.action.intent.control == Control.ACK_REMINDER:
+            if retained_low or pending.action.intent.control == Control.ACK_REMINDER:
                 current = self.intent(pending.action.intent.id)
                 if current and current.stage not in (Stage.CANCELLED, Stage.SUPERSEDED):
-                    self._update(current.id, Stage.VERIFIED)
+                    self._update(
+                        current.id, Stage.FAILED if retained_low else Stage.VERIFIED, reason
+                    )
         for control, identifier in self._latest.items():
             item = self.intent(identifier)
             if (
@@ -280,6 +293,21 @@ class CommandEngine:
                 and self._inflight is None
             ):
                 self._update(identifier, Stage.VERIFIED)
+
+    @staticmethod
+    def _pump_off_retained_low(pending: Transaction, state: SpaState) -> bool:
+        # An observed HIGH -> LOW change is useful even when requested OFF was
+        # refused. End this goal, not the connection. Never call it OFF/success,
+        # cycle LOW -> HIGH again, or generalize to an unchanged/ambiguous state.
+        # The caller still enforces same epoch, new sequence and post-send guard.
+        return (
+            pending.action.intent.control == Control.PUMP1
+            and pending.action.intent.desired == PumpState.OFF
+            and pending.action.starting_value == PumpState.HIGH
+            and state.controls_safe
+            and state.pump1_is_circulation
+            and state.value(Control.PUMP1) == PumpState.LOW
+        )
 
     @staticmethod
     def _reminder_acknowledged(intent: Intent, state: SpaState) -> bool:

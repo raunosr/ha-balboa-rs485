@@ -26,6 +26,11 @@ async def test_fault_notification_after_ack_fails_once_then_recovers_on_normal_s
                     blocking=True,
                 )
             await eventually(lambda: entry.runtime_data.runtime.connection.snapshot.available)
+            # Transport readiness precedes the coordinator/entity state write.
+            # HA skips unavailable targets instead of invoking their service;
+            # wait at the actual call boundary before checking the fault guard.
+            await eventually(lambda: hass.states.get("climate.balboa_spa").state != "unavailable")
+            assert entry.runtime_data.runtime.state.status.reminder_code == 30
             assert simulator.physical_commands == 1
             with pytest.raises(HomeAssistantError, match="unsupported_notification_30"):
                 await hass.services.async_call(
@@ -34,8 +39,17 @@ async def test_fault_notification_after_ack_fails_once_then_recovers_on_normal_s
                     {"entity_id": "climate.balboa_spa", "temperature": 37},
                     blocking=True,
                 )
+            assert simulator.physical_commands == 1
             simulator.reminder_code = None
-            await eventually(lambda: entry.runtime_data.runtime.state.controls_safe)
+            # A fresh normal status may arrive before setup is re-queried in
+            # the new epoch. Temperature writes also require those limits.
+            await eventually(
+                lambda: (
+                    entry.runtime_data.runtime.state.controls_safe
+                    and entry.runtime_data.runtime.state.setup is not None
+                    and hass.states.get("climate.balboa_spa").state != "unavailable"
+                )
+            )
             await hass.services.async_call(
                 "climate",
                 "set_temperature",
