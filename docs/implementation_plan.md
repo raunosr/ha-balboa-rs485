@@ -22,6 +22,10 @@ experiment. Its implementation, naming and validation are recorded in
 `docs/direct_tcp_lab_review.md`. This does not promote the mode to production.
 The later owner-authorized 0.0.16 live promotion/trial is recorded separately in
 `docs/direct_tcp_live_review.md`; short compatibility tests do not close Phase 11.
+The HACS-installed 0.0.16 trial passed native High/Low restoration and light
+on/off, including two automatic confirmation-timeout recoveries without manual
+reload or channel allocation. Mode-specific bathing restoration and remaining
+advanced-control/soak gates are still open; no automation migration occurred.
 The 2026-09-07 MQTT inventory and revised dual-range/session UX are recorded in
 `docs/phase4b_design.md`. The complete 0.0.14 native-entity implementation includes
 range-aware restoration, filters and guarded maintenance controls. Production

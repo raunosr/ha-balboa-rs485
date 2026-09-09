@@ -62,5 +62,44 @@ The existing one-socket regression test reproduced it (87 other tests passed).
 Non-direct legacy entries now omit that irrelevant key, while leaving direct mode
 explicitly clears prior acceptance. This correction requires a fresh HA CI pass.
 
-Hardware acceptance is pending. A successful download is not a successful command,
-and a short successful command is not long-duration weak-link acceptance.
+Hardware acceptance was pending at publication. The subsequent bounded result is
+recorded below; it is not long-duration weak-link acceptance.
+
+## Bounded hardware result — 2026-09-09
+
+The corrected PR passed **585 core/tools tests**, **88 actual-HA tests** and
+**one isolated-ZIP test** (674 total), plus HACS, lint, strict typing and bundle
+checks. Core coverage was 97.09%; adapter coverage 97.20%. Released as v0.0.16
+after normal protected-branch review; no protection bypass or automatic merge.
+
+HACS installed v0.0.16. One authorized Core restart activated it; the version was
+verified in both the UI and diagnostics. The other network client was freshly
+confirmed stopped. Official reconfigure preserved the device and all 54 entity
+IDs, and the new mode reached READY with complete BP6013G2 metadata and no channel
+allocations. Physical controls stayed disabled until those checks passed.
+
+| Bounded control intent | Independently observed outcome |
+| --- | --- |
+| Light on | First transaction timed out after 4.01s; automatic new connection and fresh-state reconciliation reached VERIFIED, light on |
+| Restore light off | Same recovery path; VERIFIED and original off state restored |
+| High to Low | VERIFIED in 0.402s, observed Low and its stored target |
+| Restore High | VERIFIED in 0.443s, original High setpoint restored |
+
+These were **four HA service requests**, six physical transactions: four verified
+and two initially ambiguous. No extra service request, manual reload or restart
+was used to recover the lights. Each recovery closed the old socket, resynchronized
+and derived the next action from fresh unchanged light state. The successful
+post-recovery transaction latencies were 0.204s/0.294s; those do not include the
+earlier timeout/backoff and must not be advertised as total response times.
+
+Final command checks: READY in epoch 3, two recoveries, zero channel allocations,
+zero CRC errors, no invalid decoded messages, complete metadata, original High
+setpoint/light state and both filter schedules intact. No bathing-session intent
+was created and no automation was changed. The controller's own circulation
+behavior was observed, not forced back to an earlier pump snapshot.
+
+This passes the bounded direct-mode light/range compatibility test and demonstrates
+two real automatic recoveries. It **does not prove first-attempt reliability,
+collision-free operation, all advanced-control acceptance, bathing-session
+Low-to-High/end restoration in this mode, or a long-duration network soak**.
+The experimental label remains appropriate. No second restart was needed.
