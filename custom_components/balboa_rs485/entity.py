@@ -1,6 +1,7 @@
 """Stable entry-scoped identity and observed availability for native entities."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from homeassistant.core import callback
 from homeassistant.helpers import entity_registry as er
@@ -44,7 +45,7 @@ class BalboaEntity(CoordinatorEntity[SpaCoordinator]):
         entity = registry.async_get(self.entity_id)
         if entity is None or entity.config_entry_id != self.coordinator.entry.entry_id:
             return
-        options = entity.options.get(DOMAIN, {})
+        options: Mapping[str, Any] = entity.options.get(DOMAIN, {})
         if options.get("pump_slider_migrated"):
             return
         if entity.hidden_by is None:
