@@ -90,8 +90,13 @@ the controller protocol has no compare-and-swap operation.
 - Soak: requests supported pumps off and verifies them. It does not disable the
   heater or dedicated circulation, promise physical flow has stopped, or start
   the HA bathing timer. Automatic filtration/heating can prevent pumps stopping.
-- Acknowledge reminder: only recognized clean-filter/pH/sanitizer reminders in a
-  safe status. It neither clears fault history nor acknowledges unknown faults.
+- Acknowledge reminder: one recognized replace-filter/clean-filter/pH/sanitizer
+  reminder in a safe status. A following reminder is not automatically cleared,
+  and ambiguous acknowledgements are never retried. Unrecognized codes below 15
+  with reminder-only flags are displayed as `none` and do not block controls;
+  pressing acknowledge in that state sends nothing. Raw codes stay in diagnostics.
+  Fault-code space (15+), fault/unknown flags, priming and locks remain guarded.
+  This compatibility default does not identify the meaning of unknown codes.
 
 ## Observations and diagnostics
 

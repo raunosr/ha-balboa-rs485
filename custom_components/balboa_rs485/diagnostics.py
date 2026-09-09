@@ -35,6 +35,7 @@ def _transaction(item: Transaction, now: float) -> dict[str, Any]:
         "intent_id": item.action.intent.id,
         "control": item.action.intent.control.value,
         "desired": _value(item.action.intent.desired),
+        "requested_reminder_code": item.action.intent.reminder_code,
         "starting_value": _value(item.starting_value),
         "resulting_value": _value(item.resulting_value),
         "epoch": item.action.epoch,
@@ -135,7 +136,9 @@ async def async_get_config_entry_diagnostics(
                 "initialization_mode": passive.frame.payload[1],
                 "reminder_code": passive.reminder_code,
                 "reminder": passive.reminder,
+                "unrecognized_reminder_ignored": passive.unrecognized_reminder_ignored,
                 "notification_flags": passive.frame.payload[18],
+                "notification_display_flags": passive.frame.payload[19],
                 "panel_locked": passive.panel_locked,
                 "settings_locked": passive.settings_locked,
             }

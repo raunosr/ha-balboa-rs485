@@ -29,6 +29,7 @@ class Intent:
     requested_at: float
     stage: Stage = Stage.QUEUED
     reason: str | None = None
+    reminder_code: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,7 +151,11 @@ class CommandEngine:
             current = self.intent(pending.action.intent.id)
             if current and current.stage not in (Stage.SUPERSEDED, Stage.CANCELLED):
                 self._update(
-                    pending.action.intent.id, Stage.QUEUED, "Waiting for resynchronization"
+                    pending.action.intent.id,
+                    Stage.FAILED if current.control == Control.ACK_REMINDER else Stage.QUEUED,
+                    "Reminder acknowledgement outcome ambiguous; not retried"
+                    if current.control == Control.ACK_REMINDER
+                    else "Waiting for resynchronization",
                 )
 
     def intent(self, identifier: int) -> Intent | None:
@@ -186,7 +191,15 @@ class CommandEngine:
                 self._update(previous, Stage.SUPERSEDED)
             self._active.pop(previous, None)
         self._counter += 1
-        item = Intent(self._counter, control, desired, now)
+        item = Intent(
+            self._counter,
+            control,
+            desired,
+            now,
+            reminder_code=self.state.status.reminder_code
+            if control == Control.ACK_REMINDER
+            else None,
+        )
         self._intents.append(item)
         self._latest[control] = item.id
         self._active[item.id] = item
@@ -239,8 +252,12 @@ class CommandEngine:
             # Automatic filtration can skip an expected intermediate OFF. A
             # fresh final desired value is equally sufficient; never toggle it
             # away merely to force the hypothetical intermediate transition.
-            and state.value(pending.action.intent.control)
-            in (pending.action.expected, pending.action.intent.desired)
+            and (
+                self._reminder_acknowledged(pending.action.intent, state)
+                if pending.action.intent.control == Control.ACK_REMINDER
+                else state.value(pending.action.intent.control)
+                in (pending.action.expected, pending.action.intent.desired)
+            )
         ):
             self._history[-1] = replace(
                 pending,
@@ -249,6 +266,10 @@ class CommandEngine:
                 completed_at=now,
             )
             self._inflight = None
+            if pending.action.intent.control == Control.ACK_REMINDER:
+                current = self.intent(pending.action.intent.id)
+                if current and current.stage not in (Stage.CANCELLED, Stage.SUPERSEDED):
+                    self._update(current.id, Stage.VERIFIED)
         for control, identifier in self._latest.items():
             item = self.intent(identifier)
             if (
@@ -259,6 +280,17 @@ class CommandEngine:
                 and self._inflight is None
             ):
                 self._update(identifier, Stage.VERIFIED)
+
+    @staticmethod
+    def _reminder_acknowledged(intent: Intent, state: SpaState) -> bool:
+        # A panel acknowledges the displayed reminder, not every queued one.
+        # Fault/unsupported transitions are not positive acknowledgement evidence.
+        # The explicit ignored-reminder policy exposes only a non-blocking none.
+        return state.controls_safe and (
+            state.status.reminder == "none"
+            or state.status.routine_reminder
+            and state.status.reminder_code != intent.reminder_code
+        )
 
     def next_action(self, *, now: float) -> Action | None:
         self.tick(now=now)
@@ -271,8 +303,6 @@ class CommandEngine:
         ):
             return None
         for control, identifier in self._latest.items():
-            if not self.state.safe_for(control):
-                continue
             item = self.intent(identifier)
             if item is None or item.stage in (
                 Stage.VERIFIED,
@@ -280,6 +310,16 @@ class CommandEngine:
                 Stage.CANCELLED,
                 Stage.SUPERSEDED,
             ):
+                continue
+            if (
+                control == Control.ACK_REMINDER
+                and self.state.status.reminder_code != item.reminder_code
+            ):
+                self._update(
+                    identifier, Stage.CANCELLED, "Displayed reminder changed before transmission"
+                )
+                continue
+            if not self.state.safe_for(control):
                 continue
             value = self.state.value(control)
             if value == item.desired:
@@ -341,5 +381,9 @@ class CommandEngine:
             current = self.intent(pending.action.intent.id)
             if current is not None and current.stage not in (Stage.SUPERSEDED, Stage.CANCELLED):
                 self._update(
-                    pending.action.intent.id, Stage.QUEUED, "Waiting for resynchronization"
+                    pending.action.intent.id,
+                    Stage.FAILED if current.control == Control.ACK_REMINDER else Stage.QUEUED,
+                    "Reminder acknowledgement outcome ambiguous; not retried"
+                    if current.control == Control.ACK_REMINDER
+                    else "Waiting for resynchronization",
                 )

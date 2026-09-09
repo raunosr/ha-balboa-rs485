@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.17.** Native observations, controller diagnostics,
+**Experimental release 0.0.18.** Native observations, controller diagnostics,
 named Pump 1 speeds, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -39,6 +39,18 @@ connection cleanup independent of entity-platform unload success. Historical log
 entries are labelled explicitly and retained across connection gaps. It does not
 establish the cause of a reported whole-HA crash. See the
 [reliability review](docs/reliability_0_0_17.md) for tests and remaining limits.
+The 0.0.17 bounded native-control test and normal entry reload passed with settings
+restored, but one command needed automatic recovery. Global clock Activity noise
+can be filtered; the device-specific view requires a separate history-retention
+choice. This remains experimental, not a claim of unattended reliability.
+
+0.0.18 treats unrecognized maintenance-range reminder codes (such as code 2)
+as `none` without blocking ordinary controls, while preserving the raw code in
+diagnostics. Priming, operating-mode, fault-code and lock guards remain active.
+Acknowledgement applies to one known reminder, not the whole queue; ambiguous
+acknowledgements are never automatically repeated. See the
+[reminder acknowledgement review](docs/reminder_ack_review.md) for this explicit
+compatibility policy and its tests.
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.

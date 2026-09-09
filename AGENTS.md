@@ -39,9 +39,12 @@ historical HA startup diagnosis. The current priority is the v0.0.16 reliability
 regression: routine reminders block controls, historical priming looks active,
 clock Activity noise, and failed unload retains the bus connection. Energy work
 is explicitly deferred and retained privately. See `docs/reliability_0_0_17.md`.
-The user's NEW 2026-09-09 bug-fix allowance is TWO HA Core restarts, 0/2 used
-at the pre-deployment checkpoint. This replaces, and must not be added to, old
-trial allowances. Reconcile against the private deployment ledger before acting.
+The latest 2026-09-09 request explicitly authorizes non-blocking `none` handling
+of unknown reminders, HACS installation and ONE HA Core restart for v0.0.18,
+0/1 dispatched at the candidate checkpoint. It supersedes the unused portion
+of the preceding allowance, not an additional pool. See `docs/reminder_ack_review.md`.
+Retain real operating-state/fault/lock guards and raw diagnostic codes. Reconcile
+against the private deployment ledger before acting.
 Use the normal restart tool only; record actual accepted dispatches privately.
 This does not authorize spa power cycling, failure injection on production or
 automation changes. The panel remains a bus participant; low client count is not

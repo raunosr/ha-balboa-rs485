@@ -69,9 +69,14 @@ class SpaState:
     def controls_safe(self) -> bool:
         # Unknown operating modes, hold, priming and unvalidated lock bits inhibit controls.
         data = self.status.frame.payload
-        # Routine maintenance reminders are not operating-mode faults. Admission
-        # never clears them, nor permits an unknown code or fault notification.
-        normal_or_reminder = data[1] == 0 or self.status.routine_reminder
+        # Admission never acknowledges notifications. Unknown maintenance-range
+        # reminders have an explicit non-blocking compatibility policy, while
+        # operating modes, fault-code space and notification flags stay guarded.
+        normal_or_reminder = (
+            data[1] == 0
+            or self.status.routine_reminder
+            or self.status.unrecognized_reminder_ignored
+        )
         return (
             self.available
             and data[0] == 0
@@ -100,7 +105,11 @@ class SpaState:
             control in (Control.HOLD, Control.NORMAL_OPERATION)
             and self.available
             and data[0] == 5
-            and (data[1] == 0 or self.status.routine_reminder)
+            and (
+                data[1] == 0
+                or self.status.routine_reminder
+                or self.status.unrecognized_reminder_ignored
+            )
             and not data[9] & 0xF0
             and not data[21] & 8
         )
