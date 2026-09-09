@@ -2,6 +2,7 @@
 
 DOMAIN = "balboa_rs485"
 CONF_MODE = "protocol_mode"
+CONF_DIRECT_RISK = "accept_direct_bus_risk"
 CONF_CONTROLS = "enable_controls"
 CONF_OUTDOOR = "outdoor_temperature_entity"
 CONF_FALLBACK = "fallback_heating_rate"

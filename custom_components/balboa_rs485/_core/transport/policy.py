@@ -13,6 +13,29 @@ class Mode(StrEnum):
     BWA_TCP = "bwa-tcp"
     CLASSIC_RS485 = "classic-rs485"
     CHANNEL_RS485 = "channel-rs485"
+    DIRECT_RS485_TCP_LAB = "direct-rs485-tcp-lab"
+    DIRECT_RS485_TCP = "direct-rs485-tcp"
+
+    @property
+    def direct(self) -> bool:
+        return self in (Mode.DIRECT_RS485_TCP, Mode.DIRECT_RS485_TCP_LAB)
+
+
+class DirectRs485TcpTransport:
+    """Fixed 0x0A transmission experiment, not RS485 arbitration or hardware proof.
+
+    Live use requires explicit risk acceptance; the lab mode remains loopback only.
+    Pace complete receive batches to prevent a tight write loop, not to claim CTS.
+    """
+
+    def __init__(self) -> None:
+        self._last_tx = float("-inf")
+
+    def allows_query(self, frames: list[Frame], *, now: float, residual: int) -> bool:
+        if not frames or residual or now - self._last_tx < 0.1:
+            return False
+        self._last_tx = now
+        return True
 
 
 class ClassicRs485Transport:
@@ -67,10 +90,22 @@ class BusPolicy:
         self.status_seen = False
         self.ready_count = 0
         self.channel_seen = False
+        self._direct_blocked = False
+        self._direct = DirectRs485TcpTransport()
         self._classic = ClassicRs485Transport()
         self.channel = ChannelRs485Transport(nonce=secrets.token_bytes(2))
 
     def observe(self, frame: Frame) -> None:
+        if self.requested.direct and (
+            frame.family in (175, 191)
+            and frame.message_type in (0xC4, 0xCA, 0xCC, 0x16)
+            or frame.address == 10
+            and frame.family == 191
+            # BF23 is bidirectional filter data, not proof of another sender.
+            and frame.message_type in (3, 5, 7, 17, 32, 33, 34, 39)
+        ):
+            # A second sender or an echo is ambiguous. Fail closed for this epoch.
+            self._direct_blocked = True
         if self.requested == Mode.CHANNEL_RS485:
             self.channel.observe(frame)
         if (
@@ -99,6 +134,12 @@ class BusPolicy:
 
     @property
     def mode(self) -> Mode:
+        if self.requested.direct:
+            return (
+                self.requested
+                if self.status_seen and not self._direct_blocked
+                else Mode.UNKNOWN_READ_ONLY
+            )
         if self.requested == Mode.CHANNEL_RS485:
             return self.requested
         if self.channel_seen:
@@ -109,8 +150,10 @@ class BusPolicy:
 
     @property
     def supported(self) -> bool:
-        return self.mode in (Mode.BWA_TCP, Mode.CLASSIC_RS485) or (
-            self.mode == Mode.CHANNEL_RS485 and self.channel.ready and self.status_seen
+        return (
+            self.mode.direct
+            or self.mode in (Mode.BWA_TCP, Mode.CLASSIC_RS485)
+            or (self.mode == Mode.CHANNEL_RS485 and self.channel.ready and self.status_seen)
         )
 
     @property
@@ -132,6 +175,8 @@ class BusPolicy:
     ) -> bool:
         if self.mode == Mode.BWA_TCP:
             return BwaTcpTransport.allows_query()
+        if self.mode.direct:
+            return self._direct.allows_query(frames, now=now, residual=residual)
         if self.mode == Mode.CHANNEL_RS485:
             if not self.supported:
                 return False
