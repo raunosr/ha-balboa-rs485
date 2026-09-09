@@ -39,8 +39,8 @@ historical HA startup diagnosis. The current priority is the v0.0.16 reliability
 regression: routine reminders block controls, historical priming looks active,
 clock Activity noise, and failed unload retains the bus connection. Energy work
 is explicitly deferred and retained privately. See `docs/reliability_0_0_17.md`.
-The user's NEW 2026-09-09 bug-fix allowance is TWO HA Core restarts, 0/2 used
-at the pre-deployment checkpoint. This replaces, and must not be added to, old
+The user's NEW 2026-09-09 bug-fix allowance is TWO HA Core restarts, 1/2 used
+for v0.0.17 activation. This replaces, and must not be added to, old
 trial allowances. Reconcile against the private deployment ledger before acting.
 Use the normal restart tool only; record actual accepted dispatches privately.
 This does not authorize spa power cycling, failure injection on production or
