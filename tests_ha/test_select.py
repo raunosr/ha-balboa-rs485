@@ -78,7 +78,8 @@ async def test_heat_policy_selection_keeps_range_target_and_transient_distinct(
             await eventually(
                 lambda: hass.states.get("sensor.balboa_spa_heating_mode").state == "ready_in_rest"
             )
-            assert hass.states.get(entity_id).state == "unknown"
+            assert hass.states.get(entity_id).state == "rest"
+            assert simulator.physical_commands == 1  # Display-only mapping, no correction TX.
             await choose("ready")
             assert simulator.heat_mode == 0
             assert simulator.physical_commands == 3

@@ -99,6 +99,7 @@
       "reduce_bathing": {"name": "Reduce bathing"}
     },
     "number": {
+      "pump_speed": {"name": "Pump {index} speed"},
       "bathing_duration": {"name": "Bathing duration"},
       "minimum_bathing_temperature": {"name": "Minimum bathing temperature"}
     },

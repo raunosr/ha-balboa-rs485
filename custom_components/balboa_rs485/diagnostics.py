@@ -118,6 +118,9 @@ async def async_get_config_entry_diagnostics(
         },
         "controls_enabled": entry.runtime_data.controls_enabled,
         "controls_safe": state.controls_safe if state else False,
+        "pump1_circulation_reason": state.pump1_circulation_reason
+        if state and state.available
+        else None,
         "controls_blocked_reason": state.controls_blocked_reason if state else "not_synchronized",
         "observations": {
             "passive_status": {

@@ -1,6 +1,8 @@
 # Reminder acknowledgement investigation — 2026-09-09
 
-Status: 0.0.18 release candidate; production activation is recorded separately.
+Status: 0.0.18 published through PR10 and activated through HACS on 2026-09-09.
+Bounded native-control acceptance completed; first-attempt reliability remains
+limited. See the activation evidence below.
 The meaning of notification code 2 remains unverified. Following the incident,
 the owner explicitly selected a non-blocking `none` compatibility default for
 unknown reminders and authorized HACS installation with one HA restart.
@@ -83,7 +85,38 @@ This fixes both the reproduced queue/confirmation defect and code-2-only control
 blocking under the selected policy. It does **not** identify code 2 or disable
 actual operating-state protections. Real HA regressions exercise button -> code
 2 -> climate -> light in classic RS485 and explicit direct RS485/TCP modes,
-alongside retained fault protection and recovery. Production remains v0.0.17
-until separately recorded HACS activation. The latest deployment-specific grant
-is one restart, not an addition to previous allowances. Energy work, Recorder
+alongside retained fault protection and recovery. Production now runs v0.0.18.
+The latest explicitly renewed one-restart grant was consumed by one accepted
+normal HA Core restart. Energy work, Recorder
 changes and automation migration remain deferred.
+
+## HACS activation and bounded acceptance
+
+PR10 was merged at `6fa538315e3fa74311cc599b3ce4f85ae4ca47db`; prerelease
+`v0.0.18` was downloaded through HACS. Both the on-disk manifest before restart
+and the loaded integration diagnostics after restart identify 0.0.18. All 54
+pre-existing entity IDs were preserved. Configuration validation passed; the
+other bridge application was confirmed stopped before and after the trial.
+
+The four native service intents were temperature up by 0.5 C, restore its
+original target, light on, and restore light off. All four reached VERIFIED
+against fresh controller observations. The first and third completed on the
+first transmission. Target restoration required two confirmation-timeout
+recoveries; light restoration required one. Thus this is four completed intents
+over seven transmissions, not seven successful commands or first-attempt
+reliability acceptance. The recovery was autonomous, with no repeated manual
+service request, integration reload or additional HA restart.
+
+Final observations were READY with fresh status, controls enabled and safe,
+no active priming/Hold/reminder, no blocked session, and restored target/light.
+The recovery count remained three during the final read-only follow-up. The
+Balboa-filtered system-log query contained no entries; this does not erase the
+three transaction timeouts visible in integration diagnostics.
+
+No physical acknowledgement was pressed and no reminder/fault was injected into
+production. Code 2 was absent during the live trial: its non-blocking policy is
+covered by deterministic core and HA framework tests, not a new physical code-2
+reproduction. The 53 targeted reminder regressions passed again during startup.
+The full candidate checks already passed 657 core tests, 102 HA tests, isolated
+installation, HACS validation, lint and typing. Long-duration reliability and
+other advanced controls remain outside this bounded acceptance.

@@ -1,5 +1,7 @@
 """Real TCP command transactions against shared synthetic physical state."""
 
+from dataclasses import replace
+
 import pytest
 
 from balboa_rs485.command.engine import CommandEngine, Stage
@@ -9,6 +11,42 @@ from balboa_rs485.transport.policy import Mode
 from tools.simulator.server import Simulator
 
 from .test_connection import FAST
+
+
+@pytest.mark.parametrize("mode", [Mode.CLASSIC_RS485, Mode.CHANNEL_RS485, Mode.DIRECT_RS485_TCP])
+async def test_retained_circulation_fails_only_off_goal_and_keeps_tcp_usable(mode, monkeypatch):
+    from tools.simulator import server
+
+    frame = server.load_status_fixture()
+    payload = bytearray(frame.payload)
+    payload[10] &= ~0x30  # Automatic polling/cleanup can retain LOW without a heating flag.
+    monkeypatch.setattr(
+        server, "load_status_fixture", lambda: replace(frame, payload=bytes(payload))
+    )
+    async with Simulator(
+        port=0, interval=0.03, control_lab=True, channel_lab=mode == Mode.CHANNEL_RS485
+    ) as simulator:
+        simulator.dedicated_circulation_pump = False
+        simulator.pump1_forced_low = True
+        simulator.pump_states[0] = 2
+        async with SpaRuntime(
+            "127.0.0.1",
+            simulator.port,
+            mode=mode,
+            allow_unarbitrated_writes=mode == Mode.DIRECT_RS485_TCP,
+            timing=FAST,
+            engine=CommandEngine(confirmation_guard=0.02, confirmation_timeout=0.12),
+        ) as runtime:
+            await runtime.connection.wait_for(lambda s: s.available, timeout=3)
+            intent = runtime.request(Control.PUMP1, PumpState.OFF)
+            result = await runtime.wait_for_intent(intent.id, timeout=2)
+            assert result.stage == Stage.FAILED and "circulation" in result.reason
+            assert simulator.pump_states[0] == 1
+            light = runtime.request(Control.LIGHT1, True)
+            assert (await runtime.wait_for_intent(light.id, timeout=2)).stage == Stage.VERIFIED
+            assert simulator.physical_commands == 2
+            assert simulator.stats.connections == 1
+            assert runtime.connection.snapshot.recoveries == 0
 
 
 @pytest.mark.parametrize("channel_lab", [False, True])

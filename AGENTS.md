@@ -41,10 +41,27 @@ clock Activity noise, and failed unload retains the bus connection. Energy work
 is explicitly deferred and retained privately. See `docs/reliability_0_0_17.md`.
 The latest 2026-09-09 request explicitly authorizes non-blocking `none` handling
 of unknown reminders, HACS installation and ONE HA Core restart for v0.0.18,
-0/1 dispatched at the candidate checkpoint. It supersedes the unused portion
+1/1 accepted dispatches after fresh explicit confirmation. It supersedes the unused portion
 of the preceding allowance, not an additional pool. See `docs/reminder_ack_review.md`.
 Retain real operating-state/fault/lock guards and raw diagnostic codes. Reconcile
 against the private deployment ledger before acting.
+PR10 is merged and HACS downloaded v0.0.18 (on-disk manifest verified). After
+the approval-layer rejection the owner supplied fresh explicit confirmation
+("Saat jatkaa" answering the request to restart HA Core now once). The normal
+restart tool accepted dispatch on 2026-09-09 at approximately 15:31:50 UTC.
+The latest grant is consumed: no further restart without new permission.
+Loaded v0.0.18 was verified after restart; all 54 entity IDs were retained.
+Current work is the Pump 1 duplicate-request/circulation correction and Heating
+policy display in candidate v0.0.19; see `docs/pump1_circulation_review.md`.
+The owner subsequently authorized HACS installation when tests pass and ONE new
+HA Core restart for this candidate (currently 0/1 dispatched). This supersedes
+the preceding no-remaining-restart state for this one scoped deployment only.
+Check `.research/pump1-0.0.19-deployment.md` before dispatch and record the result.
+Four bounded temperature/light intents completed and original settings were
+restored, but needed three autonomous confirmation-timeout recoveries (seven
+transmissions total). No physical reminder acknowledgement was tested; code 2
+was absent. Do not equate this with first-attempt or all-control acceptance.
+See `docs/reminder_ack_review.md` and the private ledger for current evidence.
 Use the normal restart tool only; record actual accepted dispatches privately.
 This does not authorize spa power cycling, failure injection on production or
 automation changes. The panel remains a bus participant; low client count is not

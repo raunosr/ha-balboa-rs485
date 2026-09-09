@@ -21,6 +21,7 @@ from .prediction import PredictionController
 from .sessions import SessionController
 
 _LOGGER = logging.getLogger(__name__)
+_TERMINAL = (Stage.VERIFIED, Stage.FAILED, Stage.CANCELLED, Stage.SUPERSEDED)
 
 
 class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
@@ -40,6 +41,8 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
         self._opened = False
         self._close_lock = asyncio.Lock()
         self._pending: dict[Control, int] = {}
+        self._waiters: dict[int, int] = {}
+        self._deadlines: dict[int, float] = {}
         self.sessions = SessionController(self)
         self.prediction = PredictionController(self)
 
@@ -58,10 +61,9 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
 
     @callback
     def _cancel_pending(self) -> None:
-        terminal = (Stage.VERIFIED, Stage.FAILED, Stage.CANCELLED, Stage.SUPERSEDED)
         for control, identifier in tuple(self._pending.items()):
             intent = self.runtime.engine.intent(identifier)
-            if intent is not None and intent.stage not in terminal:
+            if intent is not None and intent.stage not in _TERMINAL:
                 # Keep the in-flight transaction's ambiguity/confirmation guard;
                 # cancel only its remaining goal, not physical observations.
                 self.runtime.engine.cancel(control)
@@ -71,23 +73,48 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             raise HomeAssistantError("Spa integration is stopped or stopping")
         if not self.controls_enabled:
             raise HomeAssistantError("Physical controls are disabled in integration options")
-        try:
-            intent = self.runtime.request(control, desired)
-        except ValueError as err:
-            raise HomeAssistantError(str(err)) from err
+        identifier = self._pending.get(control)
+        intent = self.runtime.engine.intent(identifier) if identifier is not None else None
+        # Native pump aliases share an active goal, including during recovery.
+        # Do not reset its action budget, deadline or in-flight confirmation.
+        # Other actions (especially acknowledgements with validity guards) retain
+        # their existing one-request semantics. A different target still wins.
+        if not (
+            control.value.startswith("pump")
+            and intent is not None
+            and intent.desired == desired
+            and intent.stage not in _TERMINAL
+        ):
+            try:
+                intent = self.runtime.request(control, desired)
+            except ValueError as err:
+                raise HomeAssistantError(str(err)) from err
+        assert intent is not None
+        loop = asyncio.get_running_loop()
+        deadline = self._deadlines.setdefault(intent.id, loop.time() + 20)
+        self._waiters[intent.id] = self._waiters.get(intent.id, 0) + 1
         self._pending[control] = intent.id
         try:
-            result = await self.runtime.wait_for_intent(intent.id)
+            result = await self.runtime.wait_for_intent(
+                intent.id, timeout=max(0, deadline - loop.time())
+            )
         except (TimeoutError, asyncio.CancelledError) as err:
-            # An older coalesced service call must never cancel the newer intent.
-            if self._pending.get(control) == intent.id:
+            # One disconnected UI caller must not cancel another caller's same
+            # goal. Last-caller cancellation and the original deadline still do.
+            if self._pending.get(control) == intent.id and (
+                isinstance(err, TimeoutError) or self._waiters[intent.id] == 1
+            ):
                 self.runtime.engine.cancel(control)
             if isinstance(err, asyncio.CancelledError):
                 raise
             raise HomeAssistantError("Command was not verified before the deadline") from err
         finally:
-            if self._pending.get(control) == intent.id:
-                del self._pending[control]
+            self._waiters[intent.id] -= 1
+            if self._waiters[intent.id] == 0:
+                del self._waiters[intent.id]
+                del self._deadlines[intent.id]
+                if self._pending.get(control) == intent.id:
+                    del self._pending[control]
         self.async_set_updated_data(self.runtime.connection.snapshot)
         if result.stage != Stage.VERIFIED:
             raise HomeAssistantError(f"Command {result.stage.value}: {result.reason or ''}")

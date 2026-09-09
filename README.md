@@ -3,8 +3,8 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.18.** Native observations, controller diagnostics,
-named Pump 1 speeds, Low/High profiles, two filter schedules with start/end time
+**Experimental release 0.0.19.** Native observations, controller diagnostics,
+a discrete Pump 1 speed slider, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
 absent hardware is not represented by invented sensors. Changes are verified from
@@ -51,6 +51,14 @@ Acknowledgement applies to one known reminder, not the whole queue; ambiguous
 acknowledgements are never automatically repeated. See the
 [reminder acknowledgement review](docs/reminder_ack_review.md) for this explicit
 compatibility policy and its tests.
+
+0.0.19 makes Pump 1's default control a **0 / 1 / 2 slider** (off / circulation /
+jets on two-speed pumps). The old fan/select IDs remain usable but are hidden once;
+you may unhide them. When the spa requires automatic circulation, select **1** to
+stop jets: the integration cannot force circulation off. Same-speed requests share
+one bounded command; a retained LOW response no longer starts a retry/reconnect loop.
+Heating policy stays Rest during temporary Ready-in-Rest, while the mode sensor
+shows the actual transient state. See the [correction and limits](docs/pump1_circulation_review.md).
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.

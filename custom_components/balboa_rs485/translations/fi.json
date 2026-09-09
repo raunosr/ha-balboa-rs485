@@ -99,6 +99,7 @@
       "reduce_bathing": {"name": "Lyhennä kylpyjaksoa 30 min"}
     },
     "number": {
+      "pump_speed": {"name": "Pumpun {index} nopeus"},
       "bathing_duration": {"name": "Kylpyjakson kesto"},
       "minimum_bathing_temperature": {"name": "Kylvyn vähimmäislämpö"}
     },

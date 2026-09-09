@@ -1,4 +1,9 @@
-# Native controls and observations — 0.0.15
+# Native controls and observations — 0.0.19
+
+0.0.19 adds one default discrete Pump 1 slider, joins identical in-flight pump
+requests and avoids fighting automatic circulation. Existing fan/select IDs
+remain enabled but are hidden once; user unhiding is preserved. See the
+[Pump 1 correction review](pump1_circulation_review.md) for evidence and limits.
 
 0.0.15 correction: filter confirmation can re-read an early mismatching response,
 with at most three total queries including lost-response retries. The default
@@ -24,13 +29,15 @@ are removed or migrated. The original local icon and HACS-compatible layout rema
   Low (maintenance) / High (bathing) presets select the controller's independently
   stored profiles. The inactive target is never guessed or silently read by
   switching profiles. Select a profile to edit its target.
-- Pump 1: named Off / Circulation (1) / Jets (2), plus its existing fan entity.
-  A single-speed model instead offers Off / On. Other pumps retain their native
+- Pump 1: 0 Off / 1 Circulation / 2 Jets slider. When automatic circulation is
+  required, use 1 to stop jets; only the controller can end its automatic cycle.
+  A single-speed model instead offers 0 Off / 1 On. Other pumps retain their native
   speed controls, with only supported speeds. A speed label is not a flow sensor.
 - Supported lights, blower, auxiliary outputs and mister are discovered from
   capabilities. Unsupported hardware is omitted, not represented by fake controls.
 - Ready / Rest policy is separate from temperature range. Ready-in-Rest is an
-  observed transient, not a selectable permanent mode. Rest is not power-off.
+  observed transient with underlying Rest policy, not a selectable permanent
+  mode. The Heating mode sensor keeps that distinction. Rest is not power-off.
 
 ## Bathing session
 
