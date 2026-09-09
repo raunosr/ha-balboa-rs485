@@ -262,8 +262,7 @@ class CommandEngine:
         if self.state is None or (
             not replacing
             and (
-                self.state is None
-                or not self.state.available
+                not self.state.available
                 or not 0 <= now - self.state.observed_at < self.state_max_age
             )
         ):
@@ -495,8 +494,6 @@ class CommandEngine:
             or self._latest.get(action.intent.control) != action.intent.id
             or current is None
             or current.stage != Stage.WAITING_FOR_BUS
-            or current.deadline is not None
-            and at >= current.deadline
             or at < action.prepared_at
             or cts_at is not None
             and cts_at > at
@@ -507,6 +504,10 @@ class CommandEngine:
         self._history.append(self._inflight)
         self._update(action.intent.id, Stage.SENT)
         self._update(action.intent.id, Stage.WAITING_FOR_STATE)
+        # This is a receipt for bytes already written, not pre-TX admission.
+        # A clock jump/delayed receipt must retain ambiguity tracking even when
+        # the whole goal expired. next_action applies the pre-TX deadline guard.
+        self.tick(now=at)
 
     def tick(self, *, now: float) -> None:
         self._now = now

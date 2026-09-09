@@ -129,6 +129,18 @@ def test_deadline_during_inflight_keeps_the_safety_receipt_and_terminal_failure(
     assert engine.resync_epoch == 1
 
 
+def test_late_tx_receipt_is_kept_even_after_goal_deadline():
+    engine = CommandEngine(confirmation_timeout=1)
+    engine.observe(observed(), now=1)
+    item = engine.request(Control.PUMP1, PumpState.HIGH, now=1, deadline=3)
+    action = engine.next_action(now=1.2)
+    engine.sent(action, at=3.1, cts_at=1.2)
+    assert engine.intent(item.id).stage == Stage.FAILED
+    assert engine.pending_transaction.action == action
+    engine.tick(now=4.2)
+    assert engine.resync_epoch == 1
+
+
 def test_intent_timeline_is_bounded_and_includes_duplicates_without_transmission():
     engine = CommandEngine()
     engine.observe(observed(), now=1)

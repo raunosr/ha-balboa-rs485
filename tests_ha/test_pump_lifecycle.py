@@ -128,10 +128,11 @@ async def test_shared_deadline_fails_cleanly_and_does_not_keep_retrying(
 async def test_unload_cancels_a_coalescing_window_without_transmission(hass, socket_enabled):
     async with Simulator(port=0, interval=0.03, control_lab=True) as simulator:
         entry = await setup_spa(hass, simulator)
+        coordinator = entry.runtime_data
         tasks = [asyncio.create_task(set_speed(hass, 2))]
-        await eventually(lambda: bool(entry.runtime_data._pending))
+        await eventually(lambda: bool(coordinator._pending))
         await hass.config_entries.async_unload(entry.entry_id)
         results = await asyncio.gather(*tasks, return_exceptions=True)
         assert isinstance(results[0], HomeAssistantError)
         assert simulator.physical_commands == 0
-        assert not entry.runtime_data.runtime.connection.running
+        assert not coordinator.runtime.connection.running

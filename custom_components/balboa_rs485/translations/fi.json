@@ -2,7 +2,7 @@
   "title": "Balboa RS485",
   "exceptions": {
     "command_replaced": {
-      "message": "Pyyntö korvattiin uudemmalla tavoitearvolla. Vanhaa tavoitetta ei vahvistettu; tarkista Pump 1 -ohjauksen tila."
+      "message": "Pyyntö korvattiin uudemmalla tavoitearvolla. Vanhaa tavoitetta ei vahvistettu; tarkista laitteen todellinen tila."
     }
   },
   "services": {

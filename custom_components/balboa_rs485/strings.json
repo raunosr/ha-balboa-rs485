@@ -2,7 +2,7 @@
   "title": "Balboa RS485",
   "exceptions": {
     "command_replaced": {
-      "message": "Request replaced by a newer target. The previous target was not confirmed; check Pump 1 command status."
+      "message": "Request replaced by a newer target. The previous target was not confirmed; check the actual device state."
     }
   },
   "services": {
