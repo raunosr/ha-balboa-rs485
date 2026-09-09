@@ -241,3 +241,12 @@ The 0x04 Cycle 1 mapping is inferred from those sources, not independently obser
 at its transition. 0.0.14 scopes this layout to BP6013G2; other models keep the
 conservative source-consensus interpretation. No clock/schedule changes forced
 this observation. The mapping is diagnostic, never a safety guard.
+
+## BWALink recovery comparison, 2026-09-08
+
+See `bwalink_transport_review.md` for pinned client/entrypoint inspection and the
+installed app's non-secret transport selection. BWALink's direct TCP path does
+not implement negotiated channel ownership. Its success cannot validate our ACK
+path. The wiki's finite-allocation warning also invalidates the unproven assumption
+that a rolling retry timer makes unlimited allocation safe. The corresponding
+local draft was rejected before deployment; no bus guards were relaxed.

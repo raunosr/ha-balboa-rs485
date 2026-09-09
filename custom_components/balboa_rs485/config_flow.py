@@ -18,7 +18,11 @@ CONNECTION_SCHEMA = vol.Schema(
         vol.Required(CONF_PORT, default=8899): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=65535)
         ),
-        vol.Required(CONF_MODE, default=Mode.AUTO.value): vol.In([mode.value for mode in Mode]),
+        # A laboratory transport must not become a production choice just because
+        # it was added to the core enum. Promotion needs a separate safety review.
+        vol.Required(CONF_MODE, default=Mode.AUTO.value): vol.In(
+            [mode.value for mode in Mode if mode != Mode.DIRECT_RS485_TCP_LAB]
+        ),
     }
 )
 

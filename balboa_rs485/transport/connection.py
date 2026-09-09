@@ -121,6 +121,8 @@ class SpaConnection:
         if not host.strip() or not 1 <= port <= 65535:
             raise ValueError("host must be nonempty and port must be 1..65535")
         self.host, self.port, self.requested_mode = host, port, Mode(mode)
+        if self.requested_mode == Mode.DIRECT_RS485_TCP_LAB and host not in ("127.0.0.1", "::1"):
+            raise ValueError("Direct RS485/TCP lab requires a literal loopback endpoint")
         self.timing = timing
         self._participant = participant
         self._backoff = Backoff(timing, jitter=jitter)
@@ -387,7 +389,7 @@ class SpaConnection:
                 if (
                     self._policy.channel_seen
                     and not previous_channel
-                    and self.requested_mode != Mode.CHANNEL_RS485
+                    and self.requested_mode not in (Mode.CHANNEL_RS485, Mode.DIRECT_RS485_TCP_LAB)
                 ):
                     self._pending = None
                     self._configuration = None
@@ -550,7 +552,9 @@ class SpaConnection:
                             self._participant.sent(
                                 outbound,
                                 asyncio.get_running_loop().time(),
-                                now if self._policy.mode != Mode.BWA_TCP else None,
+                                None
+                                if self._policy.mode in (Mode.BWA_TCP, Mode.DIRECT_RS485_TCP_LAB)
+                                else now,
                             )
                             async with asyncio.timeout(self.timing.cts_window):
                                 await writer.drain()

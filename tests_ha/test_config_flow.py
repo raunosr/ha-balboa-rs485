@@ -2,6 +2,8 @@
 
 import asyncio
 
+import pytest
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -9,6 +11,15 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from tools.simulator.server import Simulator
 
 from .test_lifecycle import eventually
+
+
+def test_experimental_direct_transport_is_not_a_home_assistant_mode():
+    from custom_components.balboa_rs485.config_flow import CONNECTION_SCHEMA
+
+    with pytest.raises(vol.Invalid):
+        CONNECTION_SCHEMA(
+            {"host": "127.0.0.1", "port": 8899, "protocol_mode": "direct-rs485-tcp-lab"}
+        )
 
 
 async def test_user_can_open_configuration_form(hass):

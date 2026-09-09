@@ -37,6 +37,10 @@ all automation migration/cleanup until the integration is complete. Do not resum
 historical HA startup diagnosis. The latest single-restart HACS activation allowance
 has been consumed (1/1); a further HA Core restart requires fresh permission.
 Run failure injection in the lab.
+Read `docs/bwalink_transport_review.md` before further recovery work. The rolling
+allocation-window draft was rejected before deployment: pacing does not prevent
+finite controller channel-pool exhaustion. Do not silently add repeated allocations
+or BWALink-style direct writes. Filter acceptance passed; dual-range/recovery did not.
 Keep the Python core independent of Home Assistant. Never send unknown messages
 to hardware, treat an open socket as availability, or replay raw toggles.
 Use observed state, not optimistic updates. Run tests and lint before delivery.

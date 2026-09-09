@@ -1,8 +1,29 @@
 # Filter confirmation review — 0.0.15
 
-Status: candidate correction, not yet deployed or hardware accepted. Automation
-migration/cleanup is explicitly deferred by the user. No new HA restart authority
-is available; the later HACS activation used its one permitted restart.
+Status updated 2026-09-08: 0.0.15 installed through HACS; bounded filter correction
+hardware retest passed. Remaining native-control/recovery acceptance is incomplete.
+Automation migration/cleanup is explicitly deferred. No new HA restart authority
+is available; the later HACS activation used its one permitted restart. The
+candidate-era sections below are retained as the original development record.
+
+## Installed 0.0.15 acceptance update
+
+Release validation completed: 548 core/tool tests, 84 actual-HA tests and one
+isolated ZIP installation test passed (633 total), with lint, formatting, typing
+and HACS validation. HACS activation used its authorized single Core restart.
+
+Native Cycle 1 start change and explicit restoration were independently VERIFIED
+at 2.617690s and 0.422906s. Duration and Cycle 2 were preserved; independent entity
+readback confirmed both original schedules. No extra reconnect was used during
+these two writes. This closes the bounded filter retest only.
+
+Start/Extend/Reduce/End on an already-suitable High target passed without physical
+writes. A later High-to-Low change verified, but bathing Low-to-High timed out
+and channel recovery failed. The test session was abandoned and controls disabled;
+the user then restored High with BWALink and stopped it. No automation was changed.
+For current recovery findings and the next bounded step, see
+`bwalink_transport_review.md`. Do not repeat the historical filter installation
+gate below or count this as all-native/long-soak acceptance.
 
 ## Production evidence on 0.0.14
 

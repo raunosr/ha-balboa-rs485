@@ -155,3 +155,11 @@ Golden vectors prevent client/simulator agreement from being the only oracle.
 Main unresolved risks: classic versus channel CTS, actual Elfin latency, configuration
 requirements/identity, status variations, single-speed pump encoding, and stale
 status after TX. Each is an explicit later-phase gate, not hidden in parser code.
+
+## Fixed-address laboratory exception, 2026-09-08
+
+`direct-rs485-tcp-lab` is an explicitly selected, loopback-only direct-transmission
+experiment. It does not negotiate channels or claim CTS ownership, and is not a
+fallback for any production mode. The observed-state, epoch and command-confirmation
+invariants still apply. See `direct_tcp_lab_review.md` for endpoint enforcement,
+scope, risk and the separate hardware promotion gate.
