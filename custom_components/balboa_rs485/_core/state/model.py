@@ -181,7 +181,15 @@ class SpaState:
             return "blower"
         if self.status.heat_state == HeatState.HEATING:
             return "heating"
-        if self.status.heat_mode == HeatMode.READY_IN_REST:
+        # Ready-in-Rest can remain displayed after reaching the target; the
+        # manual only requires LOW until then (or its one-hour timeout).
+        # The mode byte alone is not evidence that an OFF request is impossible.
+        if (
+            self.status.heat_mode == HeatMode.READY_IN_REST
+            and self.current_temperature is not None
+            and self.target_temperature is not None
+            and self.current_temperature < self.target_temperature
+        ):
             return "ready_in_rest"
         if any(value is True for value in self.status.filter_running_consensus):
             return "filtration"

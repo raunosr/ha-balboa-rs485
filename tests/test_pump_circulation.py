@@ -52,6 +52,18 @@ def test_dedicated_or_unknown_circulation_capability_does_not_infer_forced_pump1
     assert non_circ().pump1_circulation_reason is None
 
 
+@pytest.mark.parametrize("water", [36.5, 37.5, None])
+def test_ready_in_rest_alone_does_not_inhibit_off_after_target_or_unknown_water(water):
+    state = non_circ()
+    data = bytearray(state.status.frame.payload)
+    data[5] = 2
+    data[2] = int(water * 2) if water is not None else 255
+    data[20] = 73  # Celsius target 36.5, heater OFF, no other circulation reason.
+    state = replace(state, status=decode_message(Frame(255, 175, 19, bytes(data))))
+    assert state.pump1_circulation_reason is None
+    state.validate(Control.PUMP1, PumpState.OFF)
+
+
 def test_circulation_starting_after_request_is_revalidated_before_transmission():
     engine = CommandEngine()
     engine.observe(non_circ(), now=1)

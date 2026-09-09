@@ -32,7 +32,9 @@ reports ready_in_rest correctly, but the policy selector formerly returned None.
   remaining caller; last-caller cancellation, disable and unload still cancel.
   Different requested speeds still supersede; reminder/session guards are unchanged.
 - With an explicitly known two-speed/non-circulation capability, observed other
-  pump/blower activity, heating, Ready-in-Rest or agreed filter flags inhibit OFF.
+  pump/blower activity, heating, Ready-in-Rest below the observed target, or agreed
+  filter flags inhibit OFF. Ready-in-Rest alone does not block OFF once the target
+  is reached; unknown temperatures do not invent a circulation requirement.
   Select 1 to stop jets without fighting automatic circulation. No unknown bit
   layout, temperature polling or cleanup flag is invented. The slider exposes
   a circulation reason when positively inferred; absence is unknown, not proof
