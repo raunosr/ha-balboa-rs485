@@ -3,13 +3,13 @@
 from dataclasses import replace
 
 import pytest
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.balboa_rs485.diagnostics import async_get_config_entry_diagnostics
 from tools.simulator.server import Simulator
 
 from .test_lifecycle import eventually
-from .test_sessions import setup_spa
 
 
 @pytest.mark.parametrize("mode", ["classic-rs485", "direct-rs485-tcp"])
@@ -53,14 +53,38 @@ async def test_filter_replacement_reminder_allows_verified_native_setpoint(
             await hass.config_entries.async_unload(entry.entry_id)
 
 
+@pytest.mark.parametrize("existing_entity", [False, True])
 async def test_historical_priming_does_not_reappear_as_new_event_on_connection_gap(
-    hass, socket_enabled
+    hass, socket_enabled, existing_entity
 ):
     async with Simulator(port=0, interval=0.03, control_lab=True) as simulator:
         simulator.fault_payload = bytes((1, 0, 19, 2, 12, 0, 0, 0, 0, 0))
-        entry = await setup_spa(hass, simulator)
+        entry = MockConfigEntry(
+            domain="balboa_rs485",
+            title="Balboa Spa",
+            data={"host": "127.0.0.1", "port": simulator.port, "protocol_mode": "classic-rs485"},
+        )
+        entry.add_to_hass(hass)
+        registry = er.async_get(hass)
+        if existing_entity:
+            registry.async_get_or_create(
+                "sensor",
+                "balboa_rs485",
+                f"{entry.entry_id}_latest_fault",
+                suggested_object_id="balboa_spa_latest_fault",
+                config_entry=entry,
+            )
+        assert await hass.config_entries.async_setup(entry.entry_id)
         try:
-            fault_id = "sensor.balboa_spa_latest_fault"
+            await eventually(lambda: entry.runtime_data.runtime.metadata_complete)
+            fault_id = registry.async_get_entity_id(
+                "sensor", "balboa_rs485", f"{entry.entry_id}_latest_fault"
+            )
+            assert fault_id == (
+                "sensor.balboa_spa_latest_fault"
+                if existing_entity
+                else "sensor.balboa_spa_latest_historical_log_entry"
+            )
             await eventually(lambda: hass.states.get(fault_id).state == "priming_mode")
             historical = hass.states.get(fault_id)
             assert historical.attributes["historical"]
