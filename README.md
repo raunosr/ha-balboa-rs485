@@ -16,12 +16,15 @@ initial learning, optional outdoor temperature and error metrics.
 
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
 passed, including Pump 1 high-to-low on 0.0.14 and filter readback/restoration on
-0.0.15. Low-to-High and negotiated-channel recovery did not pass. Version 0.0.16
+0.0.15. Low-to-High and negotiated-channel recovery did not pass on that version. Version 0.0.16
 adds an explicitly selected **Direct RS485/TCP – fixed address (experimental)**
 mode for supervised compatibility trials. It does not reserve a channel or wait
 for CTS, so collisions with the panel remain possible; it is never an automatic
 fallback. Risk acceptance and stopping other network clients are required.
 See the [direct-mode trial review](docs/direct_tcp_live_review.md).
+Its bounded real-spa light and High/Low restoration tests passed, including two
+automatic recoveries after unconfirmed commands; first-attempt reliability is
+not established. The trial used one HA restart and preserved all 54 entity IDs.
 Other advanced controls and long-duration weak-network recovery still need
 hardware acceptance. Negotiated mode retains its finite three-allocation budget.
 No automation migration is performed.

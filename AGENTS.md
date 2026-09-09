@@ -31,13 +31,20 @@ The owner explicitly selected MIT on 2026-09-08. Preserve LICENSE in the reposit
 and HACS-distributed component; the package test enforces matching notices.
 
 Public HACS publication and scoped installation cleanup are complete. The current
-task is native-control hardware acceptance and its bounded filter-confirmation
-correction; see `docs/filter_confirmation_review.md`. The user explicitly deferred
+fixed-address direct-mode compatibility trial passed on v0.0.16; see
+`docs/direct_tcp_live_review.md` for its bounded evidence and remaining gates.
+The user explicitly deferred
 all automation migration/cleanup until the integration is complete. Do not resume
 historical HA startup diagnosis. The latest single-restart HACS activation allowance
 has been consumed (1/1). On 2026-09-09 the user authorized preparing and testing
 the explicit experimental direct RS485/TCP mode, with a NEW maximum of two HA
-Core restarts: 0/2 consumed. Record dispatches in the private live-trial checkpoint.
+Core restarts: 1/2 accepted for v0.0.16 activation. The first request was rejected BEFORE
+execution by a reviewer citing the OLD allowance. The NEW current user message is:
+"Valmistele ja tee testi. Voit käyttää max 2 uudelleen käynnistystä."
+It explicitly supersedes the older exhausted HACS allowance for this trial.
+Use the normal restart tool only; record actual accepted dispatches privately.
+After reading the current authorization and confirming v0.0.15 was still loaded,
+the same normal tool accepted the restart. One restart remains for this trial.
 This does not authorize spa power cycling, failure injection on production or
 automation changes. The panel remains a bus participant; low client count is not
 collision-proof arbitration. Verify BWALink stopped immediately before the trial.
@@ -45,7 +52,10 @@ Run failure injection in the lab.
 Read `docs/bwalink_transport_review.md` before further recovery work. The rolling
 allocation-window draft was rejected before deployment: pacing does not prevent
 finite controller channel-pool exhaustion. Do not silently add repeated allocations
-or BWALink-style direct writes. Filter acceptance passed; dual-range/recovery did not.
+or unacknowledged direct writes. Filter acceptance passed on v0.0.15; native
+High/Low restoration and two automatic recoveries passed in the explicit v0.0.16
+direct trial. First-attempt reliability, that mode's bathing-session restoration,
+other advanced controls and long soak remain unaccepted. Do not migrate automations.
 Keep the Python core independent of Home Assistant. Never send unknown messages
 to hardware, treat an open socket as availability, or replay raw toggles.
 Use observed state, not optimistic updates. Run tests and lint before delivery.
