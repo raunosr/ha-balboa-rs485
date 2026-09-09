@@ -9,14 +9,14 @@ from .test_lifecycle import eventually
 from .test_sessions import setup_spa
 
 
-async def test_unknown_notification_after_ack_fails_once_then_recovers_on_normal_status(
+async def test_fault_notification_after_ack_fails_once_then_recovers_on_normal_status(
     hass, socket_enabled
 ):
     async with Simulator(port=0, interval=0.03, control_lab=True) as simulator:
         entry = await setup_spa(hass, simulator)
         try:
             simulator.reminder_code = 3
-            simulator.reminder_queue = [2]
+            simulator.reminder_queue = [30]
             await eventually(lambda: entry.runtime_data.runtime.state.status.reminder_code == 3)
             with pytest.raises(HomeAssistantError, match="FAILED.*not retried"):
                 await hass.services.async_call(
@@ -27,7 +27,7 @@ async def test_unknown_notification_after_ack_fails_once_then_recovers_on_normal
                 )
             await eventually(lambda: entry.runtime_data.runtime.connection.snapshot.available)
             assert simulator.physical_commands == 1
-            with pytest.raises(HomeAssistantError, match="unsupported_notification_2"):
+            with pytest.raises(HomeAssistantError, match="unsupported_notification_30"):
                 await hass.services.async_call(
                     "climate",
                     "set_temperature",
@@ -48,12 +48,16 @@ async def test_unknown_notification_after_ack_fails_once_then_recovers_on_normal
             await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_ack_next_reminder_then_climate_and_light_do_not_stall(hass, socket_enabled):
+@pytest.mark.parametrize("mode", ["classic-rs485", "direct-rs485-tcp"])
+@pytest.mark.parametrize("next_code,visible", [(2, "none"), (4, "clean_filter"), (14, "none")])
+async def test_ack_next_reminder_then_climate_and_light_do_not_stall(
+    hass, socket_enabled, mode, next_code, visible
+):
     async with Simulator(port=0, interval=0.03, control_lab=True) as simulator:
-        entry = await setup_spa(hass, simulator)
+        entry = await setup_spa(hass, simulator, mode=mode)
         try:
             simulator.reminder_code = 3
-            simulator.reminder_queue = [4]
+            simulator.reminder_queue = [next_code]
             await eventually(lambda: entry.runtime_data.runtime.state.status.reminder_code == 3)
             original_fault = entry.runtime_data.runtime.state.fault
             await hass.services.async_call(
@@ -63,8 +67,10 @@ async def test_ack_next_reminder_then_climate_and_light_do_not_stall(hass, socke
                 blocking=True,
             )
             assert simulator.physical_commands == 1
-            assert simulator.reminder_code == 4
-            assert hass.states.get("sensor.balboa_spa_reminder").state == "clean_filter"
+            assert simulator.reminder_code == next_code
+            reminder = hass.states.get("sensor.balboa_spa_reminder")
+            assert reminder.state == visible
+            assert reminder.attributes["reminder_code"] == next_code
             await hass.services.async_call(
                 "climate",
                 "set_temperature",
@@ -80,7 +86,7 @@ async def test_ack_next_reminder_then_climate_and_light_do_not_stall(hass, socke
             assert hass.states.get("climate.balboa_spa").attributes["temperature"] == 37
             assert simulator.light_states[0]
             assert simulator.physical_commands == 3
-            assert simulator.reminder_code == 4
+            assert simulator.reminder_code == next_code
             assert entry.runtime_data.runtime.state.fault == original_fault
             history = entry.runtime_data.runtime.engine.history
             assert all(item.result == "VERIFIED" for item in history)

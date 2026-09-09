@@ -136,7 +136,9 @@ async def async_get_config_entry_diagnostics(
                 "initialization_mode": passive.frame.payload[1],
                 "reminder_code": passive.reminder_code,
                 "reminder": passive.reminder,
+                "unrecognized_reminder_ignored": passive.unrecognized_reminder_ignored,
                 "notification_flags": passive.frame.payload[18],
+                "notification_display_flags": passive.frame.payload[19],
                 "panel_locked": passive.panel_locked,
                 "settings_locked": passive.settings_locked,
             }

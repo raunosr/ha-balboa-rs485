@@ -1,8 +1,9 @@
 # Reminder acknowledgement investigation — 2026-09-09
 
-Status: laboratory correction, not a new release or installed production fix.
-The meaning of notification code 2 remains unverified. Do not label it as a
-maintenance reminder or relax its control guard solely from its numeric value.
+Status: 0.0.18 release candidate; production activation is recorded separately.
+The meaning of notification code 2 remains unverified. Following the incident,
+the owner explicitly selected a non-blocking `none` compatibility default for
+unknown reminders and authorized HACS installation with one HA restart.
 
 ## Observed incident and limits
 
@@ -52,8 +53,24 @@ verifies that one action. It never requires clearing the entire queue. A reminde
 that changes before transmission cancels the queued action. An ambiguous sent
 acknowledgement is terminal FAILED, with an explicit "not retried" reason,
 including after reconnect; ordinary desired-state recovery is unchanged.
-Fault, lock and unknown transitions are not treated as acknowledgement success.
+Fault, lock and unsupported notification-flag transitions are not treated as
+acknowledgement success.
 Diagnostics include the requested reminder code for transaction interpretation.
+
+## Owner-selected compatibility default
+
+With initialization mode 3 and notification byte 18 exactly 1, unrecognized codes
+below 15 display as `none` and no longer block normal controls. The upper bound
+is a conservative policy boundary before fault-code space, not a newly decoded
+meaning for each value. Code 2's meaning remains unknown. Codes 15 and above,
+including unknown codes in that space, remain guarded, as do priming, Hold,
+test/unknown operating modes, stale data and locks. No packet format or bus
+ownership behavior changes.
+
+Raw reminder codes and whether the fallback was used remain in diagnostics,
+together with both notification flag bytes. An ignored reminder is not sent a
+clear command: the acknowledgement button is a no-op in that state. A known
+reminder changing to the non-blocking `none` state completes that one action.
 
 Regression coverage includes real TCP acknowledgement followed by another
 control, lost confirmation/reconnect, pre-send replacement, fault/lock guards,
@@ -62,9 +79,11 @@ records and unacknowledged remaining reminders must be preserved.
 
 ## Remaining boundary
 
-This fixes the demonstrated known-reminder queue/confirmation defect and
-improves the bounded error path. It does **not** identify code 2 or claim that
-all notification-dependent control blocking has been fixed. Production remains
-v0.0.17 until a separately recorded HACS activation. No restart allowance was
-consumed by this investigation; 1 of the current 2 remains. Energy work and
-automation migration remain deferred.
+This fixes both the reproduced queue/confirmation defect and code-2-only control
+blocking under the selected policy. It does **not** identify code 2 or disable
+actual operating-state protections. Real HA regressions exercise button -> code
+2 -> climate -> light in classic RS485 and explicit direct RS485/TCP modes,
+alongside retained fault protection and recovery. Production remains v0.0.17
+until separately recorded HACS activation. The latest deployment-specific grant
+is one restart, not an addition to previous allowances. Energy work, Recorder
+changes and automation migration remain deferred.

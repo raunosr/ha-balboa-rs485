@@ -204,11 +204,16 @@ async def test_adjust_actions_and_session_sensor_follow_observed_restoration(has
             await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def setup_spa(hass, simulator, *, controls=True):
+async def setup_spa(hass, simulator, *, controls=True, mode="classic-rs485"):
     entry = MockConfigEntry(
         domain="balboa_rs485",
         title="Balboa Spa",
-        data={"host": "127.0.0.1", "port": simulator.port, "protocol_mode": "classic-rs485"},
+        data={
+            "host": "127.0.0.1",
+            "port": simulator.port,
+            "protocol_mode": mode,
+            "accept_direct_bus_risk": mode == "direct-rs485-tcp",
+        },
         options={"enable_controls": controls},
     )
     entry.add_to_hass(hass)

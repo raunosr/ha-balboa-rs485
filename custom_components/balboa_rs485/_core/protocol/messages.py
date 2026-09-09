@@ -139,9 +139,25 @@ class StatusMessage:
     @property
     def reminder(self) -> str:
         code = self.reminder_code
-        if code is None or code == 0:
+        if code is None or code == 0 or self.unrecognized_reminder_ignored:
             return "none"
         return REMINDER_NAMES.get(code, "unknown")
+
+    @property
+    def unrecognized_reminder_ignored(self) -> bool:
+        """Compatibility policy, not a guessed description of a reminder.
+
+        Unknown maintenance-range codes display as none and must not stop
+        ordinary controls. Keep fault-code space (15+) and any fault/unknown
+        notification flags conservative. The original bytes remain available.
+        """
+        code = self.reminder_code
+        return (
+            code is not None
+            and 0 <= code < 15
+            and code not in REMINDER_NAMES
+            and self.frame.payload[18] == 1
+        )
 
     @property
     def routine_reminder(self) -> bool:

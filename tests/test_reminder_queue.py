@@ -13,7 +13,7 @@ from .test_session_runner import lab
 from .test_state import filter_reminder_state
 
 
-@pytest.mark.parametrize("next_code", [4, 9, 10])
+@pytest.mark.parametrize("next_code", [2, 4, 9, 10, 14])
 async def test_acknowledging_one_reminder_preserves_next_and_allows_other_controls(next_code):
     async with lab() as (simulator, runtime):
         simulator.reminder_code = 3
@@ -85,7 +85,7 @@ def test_changed_reminder_before_transmission_is_not_acknowledged():
 @pytest.mark.parametrize("overrides", [{}, {"1": 2}, {"18": 5}, {"9": 0x23}, {"21": 8}])
 def test_unknown_fault_or_lock_transition_is_not_ack_success(overrides):
     engine, intent = ack_engine()
-    state = reminder_state(2 if not overrides else 4, at=2, sequence=2, **overrides)
+    state = reminder_state(30 if not overrides else 4, at=2, sequence=2, **overrides)
     engine.observe(state, now=2)
     assert engine.intent(intent.id).stage == Stage.WAITING_FOR_STATE
     with pytest.raises(ValueError):
@@ -93,6 +93,42 @@ def test_unknown_fault_or_lock_transition_is_not_ack_success(overrides):
     engine.tick(now=5.1)
     assert engine.intent(intent.id).stage == Stage.FAILED
     assert len(engine.history) == 1
+
+
+@pytest.mark.parametrize("code", [0, 1, 2, 5, 6, 7, 8, 11, 12, 13, 14])
+def test_unrecognized_reminder_is_none_and_nonblocking_but_never_acknowledged(code):
+    state = reminder_state(code)
+    assert state.status.reminder == "none"
+    assert state.status.reminder_code == code
+    assert state.controls_safe
+    state.validate(Control.LIGHT1, True)
+    engine = CommandEngine()
+    engine.observe(state, now=1)
+    intent = engine.request(Control.ACK_REMINDER, True, now=1)
+    assert engine.next_action(now=1) is None
+    assert engine.intent(intent.id).stage == Stage.VERIFIED
+    assert not engine.history
+
+
+@pytest.mark.parametrize(
+    "overrides", [{"0": 1}, {"1": 1}, {"1": 2}, {"18": 0}, {"18": 5}, {"9": 0x23}, {"21": 8}]
+)
+def test_ignored_code_never_bypasses_fault_priming_lock_or_unknown_flags(overrides):
+    state = reminder_state(2, **overrides)
+    assert not state.controls_safe
+    with pytest.raises(ValueError):
+        state.validate(Control.LIGHT1, True)
+
+
+@pytest.mark.parametrize(
+    "code", [15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 254, 255]
+)
+def test_fault_code_or_sentinel_is_never_silently_ignored(code):
+    state = reminder_state(code)
+    assert state.status.reminder == "unknown"
+    assert not state.controls_safe
+    with pytest.raises(ValueError):
+        state.validate(Control.ACK_REMINDER, True)
 
 
 async def test_lost_ack_confirmation_does_not_clear_next_reminder_after_reconnect():

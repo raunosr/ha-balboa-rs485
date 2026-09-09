@@ -284,7 +284,8 @@ class CommandEngine:
     @staticmethod
     def _reminder_acknowledged(intent: Intent, state: SpaState) -> bool:
         # A panel acknowledges the displayed reminder, not every queued one.
-        # Fault/unknown transitions are not positive acknowledgement evidence.
+        # Fault/unsupported transitions are not positive acknowledgement evidence.
+        # The explicit ignored-reminder policy exposes only a non-blocking none.
         return state.controls_safe and (
             state.status.reminder == "none"
             or state.status.routine_reminder
