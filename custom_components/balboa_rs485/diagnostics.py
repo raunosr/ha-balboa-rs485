@@ -116,6 +116,8 @@ async def async_get_config_entry_diagnostics(
             "metadata_failures": list(runtime.metadata_failures),
         },
         "controls_enabled": entry.runtime_data.controls_enabled,
+        "controls_safe": state.controls_safe if state else False,
+        "controls_blocked_reason": state.controls_blocked_reason if state else "not_synchronized",
         "observations": {
             "passive_status": {
                 "water_temperature": passive.current_temperature,
@@ -127,6 +129,15 @@ async def async_get_config_entry_diagnostics(
                     passive.filter_running_for_model(state.model if state else None)
                 ),
                 "clock": passive.clock,
+                "priming": passive.priming,
+                "hold": passive.hold,
+                "operating_mode": passive.frame.payload[0],
+                "initialization_mode": passive.frame.payload[1],
+                "reminder_code": passive.reminder_code,
+                "reminder": passive.reminder,
+                "notification_flags": passive.frame.payload[18],
+                "panel_locked": passive.panel_locked,
+                "settings_locked": passive.settings_locked,
             }
             if passive
             else None,

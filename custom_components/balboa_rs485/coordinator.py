@@ -38,6 +38,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
         )
         self._watcher: asyncio.Task[None] | None = None
         self._opened = False
+        self._close_lock = asyncio.Lock()
         self._pending: dict[Control, int] = {}
         self.sessions = SessionController(self)
         self.prediction = PredictionController(self)
@@ -66,6 +67,8 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
                 self.runtime.engine.cancel(control)
 
     async def async_command(self, control: Control, desired: Value) -> None:
+        if not self._opened:
+            raise HomeAssistantError("Spa integration is stopped or stopping")
         if not self.controls_enabled:
             raise HomeAssistantError("Physical controls are disabled in integration options")
         try:
@@ -173,19 +176,30 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             registry.async_update_device(device.id, model=info.model, sw_version=version)
 
     async def async_close(self) -> None:
-        # Finish waiters as cancelled intents before cancelling their transport.
-        # Sent physical steps remain in observed state/history, never undone.
-        self._cancel_pending()
-        if self._watcher is not None:
-            self._watcher.cancel()
-            with suppress(asyncio.CancelledError):
-                await self._watcher
-            self._watcher = None
-        await self.prediction.async_close()
-        await self.sessions.async_close()
-        if self._opened:
+        # Stop/unload can overlap. No background-task exception or prediction
+        # persistence failure may prevent closing the one owned spa connection.
+        async with self._close_lock:
+            opened = self._opened
             self._opened = False
-            await self.runtime.__aexit__(None, None, None)
+            self._cancel_pending()
+            self.sessions.runner.close()
+            watcher, self._watcher = self._watcher, None
+            try:
+                if watcher is not None:
+                    watcher.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await watcher
+            finally:
+                try:
+                    await self.sessions.async_close()
+                finally:
+                    try:
+                        if opened:
+                            await self.runtime.__aexit__(None, None, None)
+                    finally:
+                        self.async_set_updated_data(self.runtime.connection.snapshot)
+                        # Persistence can wait only after the bus is relinquished.
+                        await self.prediction.async_close()
 
 
 type BalboaConfigEntry = ConfigEntry[SpaCoordinator]

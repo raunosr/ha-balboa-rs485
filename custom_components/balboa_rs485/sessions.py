@@ -34,7 +34,9 @@ class SessionController:
             coordinator.runtime,
             save=self._save,
             enabled=lambda: (
-                coordinator.controls_enabled and coordinator.hass.state not in _STOPPING
+                coordinator.controls_enabled
+                and coordinator._opened
+                and coordinator.hass.state not in _STOPPING
             ),
             now=lambda: dt_util.utcnow().timestamp(),
         )
