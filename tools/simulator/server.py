@@ -137,6 +137,10 @@ class Simulator:
         self.pump1_forced_low = False
         self.dedicated_circulation_pump = True
         self.physical_commands = 0
+        # Lab-only, independent TX loss while RX/status remains healthy.
+        self.drop_pump_commands = 0
+        self.pump_command_delay = 0.0
+        self._delayed_commands: set[asyncio.Task[None]] = set()
         self._profile_targets = {False: 27.0, True: 38.0}
         self.light_states = [False, False]
         self.aux_states = [False, False]
@@ -195,12 +199,27 @@ class Simulator:
         # Track writers separately so a task cancelled before starting cannot leak one.
         for writer in tuple(self._writers):
             writer.close()
-        tasks = tuple(self._tasks)
+        tasks = (*self._tasks, *self._delayed_commands)
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         self._tasks.difference_update(tasks)
+        self._delayed_commands.clear()
         await self._server.wait_closed()
+
+    def _apply_pump(self, index: int) -> None:
+        if self.scenario == "single-speed-pump" and index == 0:
+            self.pump_states[index] = 0 if self.pump_states[index] else 2
+        else:
+            self.pump_states[index] = (self.pump_states[index] + 1) % 3
+        if index == 0 and self.pump1_forced_low and self.pump_states[0] == 0:
+            self.pump_states[0] = 1
+
+    async def _delayed_pump(self, index: int, delay: float) -> None:
+        # The bridge/controller may complete an already accepted write after
+        # its TCP client disconnects. Deliberately independent of socket lifetime.
+        await asyncio.sleep(delay)
+        self._apply_pump(index)
 
     def _accept(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         if self._closing:
@@ -476,12 +495,16 @@ class Simulator:
                         and 4 <= frame.payload[0] <= 5
                     ):
                         index = frame.payload[0] - 4
-                        if self.scenario == "single-speed-pump" and index == 0:
-                            self.pump_states[index] = 0 if self.pump_states[index] else 2
+                        if self.drop_pump_commands > 0:
+                            self.drop_pump_commands -= 1
+                        elif self.pump_command_delay > 0:
+                            task = asyncio.create_task(
+                                self._delayed_pump(index, self.pump_command_delay)
+                            )
+                            self._delayed_commands.add(task)
+                            task.add_done_callback(self._delayed_commands.discard)
                         else:
-                            self.pump_states[index] = (self.pump_states[index] + 1) % 3
-                        if index == 0 and self.pump1_forced_low and self.pump_states[0] == 0:
-                            self.pump_states[0] = 1
+                            self._apply_pump(index)
                         handled = True
                     if handled:
                         self.physical_commands += 1

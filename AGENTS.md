@@ -22,6 +22,12 @@ snapshot as `raunosr/ha-balboa-rs485`. Never push private history or personal co
 email to the public remote. Use the owner's GitHub noreply address for new commits.
 After bootstrap, use pull requests and required tests on protected `main`; no
 force pushes, deletion or automatic merging. Protect published version tags.
+Scoped 2026-09-09 owner instruction: explicitly merge PR12, publish its HACS release,
+install it and restart HA. This authorizes one normal reviewed squash merge of
+PR12 (including 0.0.20 release metadata) after all required checks pass, not recurring
+auto-merge or any protection bypass. The new activation allowance is ONE HA Core
+restart, initially 0/1 accepted dispatches, separate from consumed historical grants.
+Reconcile its current use with `.research/command-lifecycle-0.0.20-deployment.md`.
 Keep repository credentials read-only in CI, require approval for external fork
 workflows, and do not run untrusted code with production access. Review publication
 text for secrets and home-network information. Publish experimental limitations
@@ -51,12 +57,14 @@ the approval-layer rejection the owner supplied fresh explicit confirmation
 restart tool accepted dispatch on 2026-09-09 at approximately 15:31:50 UTC.
 The latest grant is consumed: no further restart without new permission.
 Loaded v0.0.18 was verified after restart; all 54 entity IDs were retained.
-Current work is the Pump 1 duplicate-request/circulation correction and Heating
-policy display in candidate v0.0.19; see `docs/pump1_circulation_review.md`.
-The owner subsequently authorized HACS installation when tests pass and ONE new
-HA Core restart for this candidate (currently 0/1 dispatched). This supersedes
-the preceding no-remaining-restart state for this one scoped deployment only.
-Check `.research/pump1-0.0.19-deployment.md` before dispatch and record the result.
+PR11's Pump 1 duplicate-request/circulation correction and Heating policy display
+are released as v0.0.19; see `docs/pump1_circulation_review.md`. The owner merged
+PR11 manually, and HACS installed the verified release. The normal restart tool
+rejected dispatch; the owner then performed the activation restart manually.
+Loaded v0.0.19, all 54 existing IDs and the new Pump 1 speed slider were verified.
+That scoped activation is complete: do not reuse its allowance for another reboot.
+Any further production HA restart requires fresh permission. The private evidence
+ledger is `.research/pump1-0.0.19-deployment.md`.
 Four bounded temperature/light intents completed and original settings were
 restored, but needed three autonomous confirmation-timeout recoveries (seven
 transmissions total). No physical reminder acknowledgement was tested; code 2

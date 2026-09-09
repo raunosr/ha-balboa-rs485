@@ -135,7 +135,7 @@ async def test_duplicate_keeps_original_deadline_and_different_target_still_supe
             )
             await eventually(lambda: len(seen) == 2)
             assert seen[0][0] == seen[1][0]
-            assert 0 < seen[1][1] < seen[0][1] <= 20
+            assert 0 < seen[1][1] < seen[0][1] <= 30
             tasks.append(
                 asyncio.create_task(coordinator.async_command(Control.PUMP1, PumpState.LOW))
             )

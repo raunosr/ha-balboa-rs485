@@ -7,11 +7,11 @@ from contextlib import suppress
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from ._core.command.engine import Stage
+from ._core.command.engine import TERMINAL, Stage
 from ._core.runtime import SpaRuntime
 from ._core.state.model import Control, Value
 from ._core.transport.connection import Snapshot
@@ -21,7 +21,9 @@ from .prediction import PredictionController
 from .sessions import SessionController
 
 _LOGGER = logging.getLogger(__name__)
-_TERMINAL = (Stage.VERIFIED, Stage.FAILED, Stage.CANCELLED, Stage.SUPERSEDED)
+_TERMINAL = TERMINAL
+PUMP_COMMAND_TIMEOUT = 30.0
+PUMP_COALESCE_WINDOW = 0.15  # Coalesce unsent UI goals, never a bus-ownership delay.
 
 
 class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
@@ -66,13 +68,15 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             if intent is not None and intent.stage not in _TERMINAL:
                 # Keep the in-flight transaction's ambiguity/confirmation guard;
                 # cancel only its remaining goal, not physical observations.
-                self.runtime.engine.cancel(control)
+                self.runtime.engine.cancel(control, now=self.hass.loop.time())
 
     async def async_command(self, control: Control, desired: Value) -> None:
         if not self._opened:
             raise HomeAssistantError("Spa integration is stopped or stopping")
         if not self.controls_enabled:
             raise HomeAssistantError("Physical controls are disabled in integration options")
+        loop = asyncio.get_running_loop()
+        pump = control.value.startswith("pump")
         identifier = self._pending.get(control)
         intent = self.runtime.engine.intent(identifier) if identifier is not None else None
         # Native pump aliases share an active goal, including during recovery.
@@ -80,20 +84,30 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
         # Other actions (especially acknowledgements with validity guards) retain
         # their existing one-request semantics. A different target still wins.
         if not (
-            control.value.startswith("pump")
+            pump
             and intent is not None
             and intent.desired == desired
             and intent.stage not in _TERMINAL
         ):
             try:
-                intent = self.runtime.request(control, desired)
+                intent = self.runtime.request(
+                    control,
+                    desired,
+                    deadline=loop.time() + (PUMP_COMMAND_TIMEOUT if pump else 20),
+                    defer_for=PUMP_COALESCE_WINDOW if pump else 0,
+                    replace_pending=pump,
+                )
             except ValueError as err:
                 raise HomeAssistantError(str(err)) from err
+        else:
+            assert intent is not None
+            self.runtime.engine.joined(intent.id, now=loop.time())
         assert intent is not None
-        loop = asyncio.get_running_loop()
-        deadline = self._deadlines.setdefault(intent.id, loop.time() + 20)
+        assert intent.deadline is not None
+        deadline = self._deadlines.setdefault(intent.id, intent.deadline)
         self._waiters[intent.id] = self._waiters.get(intent.id, 0) + 1
         self._pending[control] = intent.id
+        self.async_set_updated_data(self.runtime.connection.snapshot)
         try:
             result = await self.runtime.wait_for_intent(
                 intent.id, timeout=max(0, deadline - loop.time())
@@ -104,7 +118,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             if self._pending.get(control) == intent.id and (
                 isinstance(err, TimeoutError) or self._waiters[intent.id] == 1
             ):
-                self.runtime.engine.cancel(control)
+                self.runtime.engine.cancel(control, now=loop.time())
             if isinstance(err, asyncio.CancelledError):
                 raise
             raise HomeAssistantError("Command was not verified before the deadline") from err
@@ -115,7 +129,13 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
                 del self._deadlines[intent.id]
                 if self._pending.get(control) == intent.id:
                     del self._pending[control]
-        self.async_set_updated_data(self.runtime.connection.snapshot)
+            self.async_set_updated_data(self.runtime.connection.snapshot)
+        if result.stage == Stage.SUPERSEDED:
+            # Not a successful device write or a device fault. HA may show this
+            # cancellation notice, but never report the old goal as VERIFIED.
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="command_replaced"
+            )
         if result.stage != Stage.VERIFIED:
             raise HomeAssistantError(f"Command {result.stage.value}: {result.reason or ''}")
 
@@ -174,6 +194,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             snapshot.channel_assignment,
             snapshot.configuration_revision,
             self.runtime.state,
+            self.runtime.engine.revision,
         )
 
     async def _watch(self) -> None:

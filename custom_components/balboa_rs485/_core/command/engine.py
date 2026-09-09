@@ -21,6 +21,9 @@ class Stage(StrEnum):
     CANCELLED = "CANCELLED"
 
 
+TERMINAL = frozenset((Stage.VERIFIED, Stage.FAILED, Stage.SUPERSEDED, Stage.CANCELLED))
+
+
 @dataclass(frozen=True, slots=True)
 class Intent:
     id: int
@@ -30,6 +33,23 @@ class Intent:
     stage: Stage = Stage.QUEUED
     reason: str | None = None
     reminder_code: int | None = None
+    deadline: float | None = None
+    not_before: float = 0
+
+
+@dataclass(frozen=True, slots=True)
+class IntentEvent:
+    """Bounded semantic trace, including goals that never produced a transmission."""
+
+    intent_id: int
+    control: Control
+    desired: Value
+    stage: Stage
+    at: float
+    epoch: int | None
+    observed: Value | None
+    reason: str | None
+    kind: str = "transition"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,12 +138,47 @@ class CommandEngine:
         self._history: deque[Transaction] = deque(maxlen=100)
         self._inflight: Transaction | None = None
         self._counter = 0
+        self._now = 0.0
+        self._events: deque[IntentEvent] = deque(maxlen=200)
+        self.revision = 0
         self.resync_epoch: int | None = None
         self._settling: tuple[tuple[Value | None, ...], float, int, int] | None = None
 
     @property
     def history(self) -> tuple[Transaction, ...]:
         return tuple(self._history)
+
+    @property
+    def events(self) -> tuple[IntentEvent, ...]:
+        return tuple(self._events)
+
+    def latest(self, control: Control) -> Intent | None:
+        identifier = self._latest.get(control)
+        return self.intent(identifier) if identifier is not None else None
+
+    def _record(self, item: Intent, kind: str = "transition") -> None:
+        state = self.state
+        self._events.append(
+            IntentEvent(
+                item.id,
+                item.control,
+                item.desired,
+                item.stage,
+                self._now,
+                state.epoch if state else None,
+                state.value(item.control) if state and state.available else None,
+                item.reason,
+                kind,
+            )
+        )
+        self.revision += 1
+
+    def joined(self, identifier: int, *, now: float) -> None:
+        """Record a duplicate waiter without extending or replacing its goal."""
+        item = self.intent(identifier)
+        if item is not None and item.stage not in TERMINAL:
+            self._now = now
+            self._record(item, "joined")
 
     @property
     def busy(self) -> bool:
@@ -135,6 +190,7 @@ class CommandEngine:
         return self._inflight
 
     def suspend(self, *, now: float) -> None:
+        self._now = now
         if self.state is not None:
             self.state = replace(self.state, available=False)
         if self._inflight is not None:
@@ -149,7 +205,7 @@ class CommandEngine:
             self._settling = None
             self._inflight = None
             current = self.intent(pending.action.intent.id)
-            if current and current.stage not in (Stage.SUPERSEDED, Stage.CANCELLED):
+            if current and current.stage not in TERMINAL:
                 self._update(
                     pending.action.intent.id,
                     Stage.FAILED if current.control == Control.ACK_REMINDER else Stage.QUEUED,
@@ -164,18 +220,51 @@ class CommandEngine:
         )
 
     def _update(self, identifier: int, stage: Stage, reason: str | None = None) -> None:
+        previous = self.intent(identifier)
+        if previous is None or (previous.stage == stage and previous.reason == reason):
+            return
+        updated = replace(previous, stage=stage, reason=reason)
+        self._record(updated)
         if identifier in self._active:
-            self._active[identifier] = replace(self._active[identifier], stage=stage, reason=reason)
+            self._active[identifier] = updated
         for index, item in enumerate(self._intents):
             if item.id == identifier:
-                self._intents[index] = replace(item, stage=stage, reason=reason)
+                self._intents[index] = updated
                 return
 
-    def request(self, control: Control, desired: Value, *, now: float) -> Intent:
+    def request(
+        self,
+        control: Control,
+        desired: Value,
+        *,
+        now: float,
+        deadline: float | None = None,
+        defer_for: float = 0,
+        replace_pending: bool = False,
+    ) -> Intent:
         if (
-            self.state is None
-            or not self.state.available
-            or not 0 <= now - self.state.observed_at < self.state_max_age
+            deadline is not None
+            and (not math.isfinite(deadline) or deadline <= now)
+            or not math.isfinite(defer_for)
+            or defer_for < 0
+        ):
+            raise ValueError("Require a future finite deadline and nonnegative finite defer time")
+        self._now = now
+        self.tick(now=now)
+        existing = self.latest(control)
+        replacing = bool(
+            replace_pending
+            and isinstance(control, Control)
+            and control.value.startswith("pump")
+            and existing is not None
+            and existing.stage not in TERMINAL
+        )
+        if self.state is None or (
+            not replacing
+            and (
+                not self.state.available
+                or not 0 <= now - self.state.observed_at < self.state_max_age
+            )
         ):
             raise ValueError("A fresh, synchronized physical state is required")
         if control == Control.FILTERS and (
@@ -183,12 +272,19 @@ class CommandEngine:
             or not 0 <= now - self.state.filters_at < self.state_max_age
         ):
             raise ValueError("A fresh queried filter record is required")
-        self.state.validate(control, desired)
+        if replacing:
+            # Admission of a replacement *intent*, never permission to transmit
+            # from cached observations. next_action revalidates current state.
+            replace(self.state, available=True).validate(control, desired)
+            assert existing is not None
+            deadline = existing.deadline
+        else:
+            self.state.validate(control, desired)
         previous = self._latest.get(control)
         if previous is not None:
             existing = self.intent(previous)
             if existing and existing.stage not in (Stage.VERIFIED, Stage.FAILED, Stage.CANCELLED):
-                self._update(previous, Stage.SUPERSEDED)
+                self._update(previous, Stage.SUPERSEDED, "Replaced by a newer requested value")
             self._active.pop(previous, None)
         self._counter += 1
         item = Intent(
@@ -199,19 +295,30 @@ class CommandEngine:
             reminder_code=self.state.status.reminder_code
             if control == Control.ACK_REMINDER
             else None,
+            deadline=deadline,
+            not_before=now + defer_for,
         )
         self._intents.append(item)
         self._latest[control] = item.id
         self._active[item.id] = item
-        self._actions[control] = 0
+        if not replacing:
+            self._actions[control] = 0
+        self._record(item, "requested")
         return item
 
-    def cancel(self, control: Control) -> None:
+    def cancel(self, control: Control, *, now: float | None = None) -> None:
+        if now is not None:
+            self._now = now
         identifier = self._latest.get(control)
-        if identifier is not None:
+        if (
+            identifier is not None
+            and (item := self.intent(identifier))
+            and item.stage not in TERMINAL
+        ):
             self._update(identifier, Stage.CANCELLED, "Cancelled by caller")
 
     def observe(self, state: SpaState, *, now: float) -> None:
+        self._now = now
         if self.state is not None and (
             state.epoch < self.state.epoch
             or state.epoch == self.state.epoch
@@ -279,7 +386,7 @@ class CommandEngine:
             self._inflight = None
             if retained_low or pending.action.intent.control == Control.ACK_REMINDER:
                 current = self.intent(pending.action.intent.id)
-                if current and current.stage not in (Stage.CANCELLED, Stage.SUPERSEDED):
+                if current and current.stage not in TERMINAL:
                     self._update(
                         current.id, Stage.FAILED if retained_low else Stage.VERIFIED, reason
                     )
@@ -287,7 +394,7 @@ class CommandEngine:
             item = self.intent(identifier)
             if (
                 item
-                and item.stage not in (Stage.FAILED, Stage.CANCELLED)
+                and item.stage not in TERMINAL
                 and state.safe_for(control)
                 and state.value(control) == item.desired
                 and self._inflight is None
@@ -353,6 +460,15 @@ class CommandEngine:
             if value == item.desired:
                 self._update(identifier, Stage.VERIFIED)
                 continue
+            if now < item.not_before:
+                continue
+            if item.deadline is not None and item.deadline - now < self.confirmation_timeout:
+                self._update(
+                    identifier,
+                    Stage.FAILED,
+                    "Insufficient deadline budget for another verified transmission",
+                )
+                continue
             if self._actions[control] >= self.max_actions:
                 self._update(identifier, Stage.FAILED, "Physical action budget exhausted")
                 continue
@@ -367,6 +483,7 @@ class CommandEngine:
         return None
 
     def sent(self, action: Action, *, at: float, cts_at: float | None) -> None:
+        self._now = at
         if self._inflight is not None:
             raise RuntimeError("A physical transaction is already in flight")
         current = self.intent(action.intent.id)
@@ -385,9 +502,22 @@ class CommandEngine:
         self._inflight = Transaction(action, cts_at, at)
         self._actions[action.intent.control] += 1
         self._history.append(self._inflight)
+        self._update(action.intent.id, Stage.SENT)
         self._update(action.intent.id, Stage.WAITING_FOR_STATE)
+        # This is a receipt for bytes already written, not pre-TX admission.
+        # A clock jump/delayed receipt must retain ambiguity tracking even when
+        # the whole goal expired. next_action applies the pre-TX deadline guard.
+        self.tick(now=at)
 
     def tick(self, *, now: float) -> None:
+        self._now = now
+        for item in tuple(self._active.values()):
+            if item.stage not in TERMINAL and item.deadline is not None and now >= item.deadline:
+                self._update(
+                    item.id,
+                    Stage.FAILED,
+                    "Command deadline expired; requested state was not verified",
+                )
         pending = self._inflight
         if pending is None:
             return
@@ -407,7 +537,7 @@ class CommandEngine:
             self.resync_epoch = pending.action.epoch
             self._settling = None
             current = self.intent(pending.action.intent.id)
-            if current is not None and current.stage not in (Stage.SUPERSEDED, Stage.CANCELLED):
+            if current is not None and current.stage not in TERMINAL:
                 self._update(
                     pending.action.intent.id,
                     Stage.FAILED if current.control == Control.ACK_REMINDER else Stage.QUEUED,

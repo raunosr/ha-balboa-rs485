@@ -10,8 +10,9 @@
 - [Supported native entities versus BWALink](entity_parity.md)
 - [Current hardware acceptance and known limitations](phase4b_review.md)
 - [Public HACS release and repository safeguards](publication_review.md)
+- [0.0.20 pump request lifecycle, progress and recovery limits](command_lifecycle_review.md)
 
-0.0.14 is experimental, not an accepted unattended BWALink replacement. A successful
+0.0.20 is experimental, not an accepted unattended BWALink replacement. A successful
 HACS download does not validate physical controls or long-duration network recovery.
 Do not migrate automations until the appropriate hardware acceptance is complete.
 

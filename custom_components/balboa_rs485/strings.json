@@ -1,5 +1,10 @@
 {
   "title": "Balboa RS485",
+  "exceptions": {
+    "command_replaced": {
+      "message": "Request replaced by a newer target. The previous target was not confirmed; check the actual device state."
+    }
+  },
   "services": {
     "set_filter_cycle": {
       "name": "Set filter cycle",
@@ -112,6 +117,20 @@
       "pump_mode": {"name":"Pump {index} mode","state":{"off":"Off","circulation":"Circulation (1)","jets":"Jets (2)","on":"On"}}
     },
     "sensor": {
+      "pump_command": {
+        "name": "Pump 1 command",
+        "state": {
+          "idle": "No request",
+          "queued": "Queued",
+          "waiting_for_bus": "Waiting to transmit",
+          "waiting_for_state": "Waiting for confirmation",
+          "recovering": "Recovering connection",
+          "verified": "Verified",
+          "failed": "Not verified",
+          "cancelled": "Cancelled",
+          "superseded": "Replaced by newer request"
+        }
+      },
       "latest_fault": {"name": "Latest historical log entry", "state": {"priming_mode": "Priming (historical entry)"}},
       "fault_log_entries": {"name": "Fault log entries"},
       "filter_cycle_duration": {"name": "Filter cycle {index} duration"},

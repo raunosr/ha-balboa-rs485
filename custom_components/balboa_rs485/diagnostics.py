@@ -184,6 +184,35 @@ async def async_get_config_entry_diagnostics(
             "outdoor_configured": entry.runtime_data.prediction.outdoor_entity is not None,
         },
         "commands": {
+            "intent_events": [
+                {
+                    "intent_id": event.intent_id,
+                    "control": event.control.value,
+                    "desired": _value(event.desired),
+                    "stage": event.stage.value,
+                    "kind": event.kind,
+                    "age": _age(now, event.at),
+                    "epoch": event.epoch,
+                    "observed": _value(event.observed),
+                    "reason": event.reason,
+                }
+                for event in runtime.engine.events
+            ],
+            "latest_intents": [
+                {
+                    "intent_id": item.id,
+                    "control": item.control.value,
+                    "desired": _value(item.desired),
+                    "stage": item.stage.value,
+                    "reason": item.reason,
+                    "requested_age": _age(now, item.requested_at),
+                    "deadline_remaining": max(0, round(item.deadline - now, 3))
+                    if item.deadline is not None
+                    else None,
+                }
+                for control in Control
+                if (item := runtime.engine.latest(control)) is not None
+            ],
             "window_count": len(history),
             "verified": sum(item.result == Stage.VERIFIED for item in history),
             "failed": sum(item.result == Stage.FAILED for item in history),

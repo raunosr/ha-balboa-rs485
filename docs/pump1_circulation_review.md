@@ -2,7 +2,7 @@
 
 ## Scope and evidence
 
-Candidate v0.0.19 addresses three reproduced v0.0.18 symptoms: duplicate same-speed
+Version v0.0.19 addresses three reproduced v0.0.18 symptoms: duplicate same-speed
 HA requests reporting SUPERSEDED, repeated attempts to switch Pump 1 OFF while
 the controller keeps LOW running, and Heating policy becoming unknown during
 Ready-in-Rest. It does not claim to eliminate packet loss on an RS485/TCP bridge.
@@ -55,7 +55,32 @@ different final goals and continued unrelated commands. TCP tests exercise class
 channel-arbitrated and explicit direct modes. Real HA framework tests cover native
 service aliases, cancellation, original deadlines, slider steps and entity migration.
 
-Production acceptance has not yet been performed for this candidate. The owner
-authorized installation when ready and one new HA Core restart (0/1 dispatched),
-tracked separately in the private deployment ledger. Do not use historical grants.
-No pump/filter/fault injection or automation changes are authorized by these tests.
+Both final CI runs passed 673 core tests, 109 HA tests, isolated ZIP installation,
+HACS validation, lint and strict typing. The owner manually merged PR11; the merged
+source tree exactly matched the tested candidate. HACS installed v0.0.19, and the
+owner performed the one activation restart after the restart tool rejected dispatch.
+Loaded manifest version and all 54 existing entity IDs were verified; the new slider
+is the 55th entity. Old Pump 1 fan/select aliases are hidden, not disabled or removed.
+
+Bounded native hardware acceptance on the two-speed/non-circ BP6013G2 passed:
+
+- Pump 1: 0 -> 1 -> 2 -> 1 -> 0, then 0 -> 2 -> 0.
+- Light: OFF -> ON -> OFF.
+- Temperature target: one half-degree step and restoration of the observed baseline.
+- Ready-in-Rest remained visible in Heating mode while Heating policy stayed Rest.
+
+The ten goals produced 13 transmissions, all verified (mean confirmation 0.34 s).
+The connection remained READY in the same epoch, with no added recoveries or failed
+transactions during this trial. A recovery recorded before the trial is not erased
+or attributed to it. This is bounded acceptance, not a long-duration reliability claim.
+After the target writes, Pump 1 LOW was observed again without a new pump goal;
+the controller's automatic circulation cannot be uniquely identified from these bits.
+LOW subsequently returned to OFF without another command. Final readback confirmed
+Pump 1 OFF, original target restored and connection READY; light and the other
+pumps had been verified OFF. Heating policy remained Rest while the transient
+Ready-in-Rest mode was not forcibly cleared. No fault injection, automation
+migration, EW11 setting change, or further HA restart was performed.
+
+The subsequent user trial did reproduce confirmation timeouts and replaced-goal
+notices. The short passing sequence above is not general reliability acceptance.
+See `command_lifecycle_review.md` for the measured boundary and lab follow-up.
