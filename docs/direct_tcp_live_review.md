@@ -55,5 +55,12 @@ including live opt-in rejection, >3 disconnects with zero allocations, silent
 socket recovery and lost-confirmation handling for both explicit mode IDs.
 Full promotion CI and physical outcomes must be recorded separately below.
 
+First full promotion run passed 585 local core/tools tests (97.09% coverage).
+Actual-HA CI caught an unintended reconnect on a no-op legacy reconfigure: adding
+the new false acceptance key changed entry data and triggered the update listener.
+The existing one-socket regression test reproduced it (87 other tests passed).
+Non-direct legacy entries now omit that irrelevant key, while leaving direct mode
+explicitly clears prior acceptance. This correction requires a fresh HA CI pass.
+
 Hardware acceptance is pending. A successful download is not a successful command,
 and a short successful command is not long-duration weak-link acceptance.

@@ -62,7 +62,11 @@ class BalboaConfigFlow(ConfigFlow, domain=DOMAIN):
         elif user_input is not None:
             data = {**user_input, CONF_HOST: user_input[CONF_HOST].strip().lower()}
             if data[CONF_MODE] != Mode.DIRECT_RS485_TCP.value:
-                data[CONF_DIRECT_RISK] = False
+                # Do not add a default key to legacy entries: a no-op save would
+                # otherwise reconnect and reset the finite allocation budget.
+                data.pop(CONF_DIRECT_RISK, None)
+                if entry is not None and CONF_DIRECT_RISK in entry.data:
+                    data[CONF_DIRECT_RISK] = False
             self._async_abort_entries_match(
                 {CONF_HOST: data[CONF_HOST], CONF_PORT: data[CONF_PORT]}
             )
