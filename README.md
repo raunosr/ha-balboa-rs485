@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.19.** Native observations, controller diagnostics,
+**Experimental release 0.0.20.** Native observations, controller diagnostics,
 a discrete Pump 1 speed slider, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -59,6 +59,15 @@ stop jets: the integration cannot force circulation off. Same-speed requests sha
 one bounded command; a retained LOW response no longer starts a retry/reconnect loop.
 Heating policy stays Rest during temporary Ready-in-Rest, while the mode sensor
 shows the actual transient state. See the [correction and limits](docs/pump1_circulation_review.md).
+
+0.0.20 preserves the newest pending pump goal during recovery, coalesces rapid
+slider changes, and shares one bounded deadline and action budget across replacements.
+The new **Pump 1 command** sensor separates requested speed, observed speed and
+command progress; diagnostics retain a bounded history including unsent requests.
+Expired requests never become successes from late responses. Physical writes still
+require fresh synchronized safe state. These software recovery tests do not prove
+the cause of gateway/wire loss or eliminate it. See the
+[command lifecycle review](docs/command_lifecycle_review.md).
 
 Target Home Assistant **2026.8.3+**, tested on 2026.8.3. Read the
 [installation and safety guide](docs/home_assistant.md) before connecting.

@@ -22,6 +22,12 @@ snapshot as `raunosr/ha-balboa-rs485`. Never push private history or personal co
 email to the public remote. Use the owner's GitHub noreply address for new commits.
 After bootstrap, use pull requests and required tests on protected `main`; no
 force pushes, deletion or automatic merging. Protect published version tags.
+Scoped 2026-09-09 owner instruction: explicitly merge PR12, publish its HACS release,
+install it and restart HA. This authorizes one normal reviewed squash merge of
+PR12 (including 0.0.20 release metadata) after all required checks pass, not recurring
+auto-merge or any protection bypass. The new activation allowance is ONE HA Core
+restart, initially 0/1 accepted dispatches, separate from consumed historical grants.
+Reconcile its current use with `.research/command-lifecycle-0.0.20-deployment.md`.
 Keep repository credentials read-only in CI, require approval for external fork
 workflows, and do not run untrusted code with production access. Review publication
 text for secrets and home-network information. Publish experimental limitations

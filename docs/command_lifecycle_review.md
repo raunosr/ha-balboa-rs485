@@ -1,6 +1,7 @@
 # Pump request lifecycle and recovery follow-up
 
-Status: development candidate; not installed or hardware accepted.
+Status: 0.0.20 release candidate; not hardware accepted. Installation and activation
+must be verified separately from publication.
 
 ## Reproduced boundary, not a diagnosis of wire loss
 
@@ -63,5 +64,11 @@ The delay tests are synthetic examples, not a proven upper bound on EW11 latency
 Arbitration/channel-allocation limits are unchanged. No unlimited raw-toggle
 retry, automatic transport fallback, persisted pump requests or HA restart
 recovery command replay is introduced. Sessions/automations and energy work are
-outside this change. Full test results and review status will be recorded after
-the candidate checks finish; HACS/live validation remains a separate gate.
+outside this change; HACS download/live validation remains a separate gate.
+
+The implementation head `645b29e0f3396c52a8cb0834a1c21ea1e4a8253f` passed
+[CI](https://github.com/raunosr/ha-balboa-rs485/actions/runs/34389819632):
+687 core tests (96.96% coverage), 113 actual HA framework tests (97.48% coverage),
+and one isolated ZIP installation test: **801 passed**. Lint, core/HA typing and
+HACS validation passed. Release metadata and documentation are prepared in the
+same PR and must pass the required checks again before its normal squash merge.
