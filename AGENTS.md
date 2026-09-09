@@ -51,12 +51,14 @@ the approval-layer rejection the owner supplied fresh explicit confirmation
 restart tool accepted dispatch on 2026-09-09 at approximately 15:31:50 UTC.
 The latest grant is consumed: no further restart without new permission.
 Loaded v0.0.18 was verified after restart; all 54 entity IDs were retained.
-Current work is the Pump 1 duplicate-request/circulation correction and Heating
-policy display in candidate v0.0.19; see `docs/pump1_circulation_review.md`.
-The owner subsequently authorized HACS installation when tests pass and ONE new
-HA Core restart for this candidate (currently 0/1 dispatched). This supersedes
-the preceding no-remaining-restart state for this one scoped deployment only.
-Check `.research/pump1-0.0.19-deployment.md` before dispatch and record the result.
+PR11's Pump 1 duplicate-request/circulation correction and Heating policy display
+are released as v0.0.19; see `docs/pump1_circulation_review.md`. The owner merged
+PR11 manually, and HACS installed the verified release. The normal restart tool
+rejected dispatch; the owner then performed the activation restart manually.
+Loaded v0.0.19, all 54 existing IDs and the new Pump 1 speed slider were verified.
+That scoped activation is complete: do not reuse its allowance for another reboot.
+Any further production HA restart requires fresh permission. The private evidence
+ledger is `.research/pump1-0.0.19-deployment.md`.
 Four bounded temperature/light intents completed and original settings were
 restored, but needed three autonomous confirmation-timeout recoveries (seven
 transmissions total). No physical reminder acknowledgement was tested; code 2

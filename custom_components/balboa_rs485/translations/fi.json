@@ -1,5 +1,10 @@
 {
   "title": "Balboa RS485",
+  "exceptions": {
+    "command_replaced": {
+      "message": "Pyyntö korvattiin uudemmalla tavoitearvolla. Vanhaa tavoitetta ei vahvistettu; tarkista Pump 1 -ohjauksen tila."
+    }
+  },
   "services": {
     "set_filter_cycle": {
       "name": "Aseta suodatusjakso",
@@ -112,6 +117,20 @@
       "pump_mode": {"name":"Pumpun {index} tila","state":{"off":"Pois","circulation":"Kierto (1)","jets":"Poreet (2)","on":"Päällä"}}
     },
     "sensor": {
+      "pump_command": {
+        "name": "Pump 1 -ohjauksen tila",
+        "state": {
+          "idle": "Ei pyyntöä",
+          "queued": "Jonossa",
+          "waiting_for_bus": "Odottaa lähetysvuoroa",
+          "waiting_for_state": "Odottaa vahvistusta",
+          "recovering": "Palauttaa yhteyttä",
+          "verified": "Vahvistettu",
+          "failed": "Ei vahvistettu",
+          "cancelled": "Peruutettu",
+          "superseded": "Korvattu uudemmalla pyynnöllä"
+        }
+      },
       "latest_fault": {"name": "Viimeisin historiakirjaus", "state": {"priming_mode": "Priming (historiakirjaus)"}},
       "fault_log_entries": {"name": "Vikahistorian merkinnät"},
       "filter_cycle_duration": {"name": "Suodatusjakson {index} kesto"},

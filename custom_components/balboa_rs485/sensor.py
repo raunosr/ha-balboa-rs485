@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from ._core.command.engine import TERMINAL, Stage
 from ._core.protocol.messages import (
     FAULT_NAMES,
     REMINDER_NAMES,
@@ -26,6 +27,7 @@ from ._core.protocol.messages import (
 )
 from ._core.range_session import RangeSession
 from ._core.session import SessionPhase
+from ._core.state.model import Control
 from ._core.transport.connection import ConnectionState, Snapshot
 from .coordinator import BalboaConfigEntry, SpaCoordinator
 from .entity import BalboaEntity, BalboaFilterEntity, BalboaObservationEntity
@@ -143,6 +145,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             ConnectionSensor(entry.runtime_data),
+            PumpCommandSensor(entry.runtime_data),
             HeatingSessionSensor(entry.runtime_data),
             WaterTemperatureSensor(entry.runtime_data),
             FilterDurationSensor(entry.runtime_data, 1),
@@ -160,6 +163,63 @@ async def async_setup_entry(
             ),
         ]
     )
+
+
+class PumpCommandSensor(BalboaEntity, SensorEntity):
+    """Request lifecycle stays visible during recovery; never an optimistic pump state."""
+
+    _attr_translation_key = "pump_command"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = [
+        "idle",
+        "queued",
+        "waiting_for_bus",
+        "waiting_for_state",
+        "recovering",
+        "verified",
+        "failed",
+        "cancelled",
+        "superseded",
+    ]
+    _attr_icon = "mdi:progress-check"
+
+    def __init__(self, coordinator: SpaCoordinator) -> None:
+        super().__init__(coordinator, "pump1_command")
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success
+
+    @property
+    def native_value(self) -> str:
+        engine = self.coordinator.runtime.engine
+        item = engine.latest(Control.PUMP1)
+        if item is None:
+            return "idle"
+        if item.stage not in TERMINAL and (
+            engine.resync_epoch is not None or not self.coordinator.data.available
+        ):
+            return "recovering"
+        return "waiting_for_state" if item.stage == Stage.SENT else item.stage.value.lower()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        runtime = self.coordinator.runtime
+        item = runtime.engine.latest(Control.PUMP1)
+        state = runtime.state
+        options = state.options(Control.PUMP1) if state else ()
+        observed = state.value(Control.PUMP1) if state and state.available else None
+        desired = item.desired if item else None
+        return {
+            "requested_speed": options.index(desired)
+            if desired is not None and desired in options
+            else None,
+            "observed_speed": options.index(observed)
+            if observed is not None and observed in options
+            else None,
+            "intent_id": item.id if item else None,
+            "reason": item.reason if item else None,
+        }
 
 
 class FaultSensor(BalboaEntity, SensorEntity):

@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from ._core.command.engine import TERMINAL
 from ._core.state.model import Control
 from .const import CONF_BATH_DURATION, CONF_BATH_MINIMUM
 from .coordinator import BalboaConfigEntry, SpaCoordinator
@@ -74,16 +75,37 @@ class PumpSpeedNumber(BalboaControlEntity, NumberEntity):
         return max(1, len(self.options) - 1)
 
     @property
+    def available(self) -> bool:
+        item = self.coordinator.runtime.engine.latest(self.control)
+        return super().available or bool(
+            self.coordinator.last_update_success
+            and self.coordinator.controls_enabled
+            and self.coordinator.runtime.connection.running
+            and self.options
+            and item is not None
+            and item.stage not in TERMINAL
+        )
+
+    @property
     def native_value(self) -> float | None:
+        state = self.coordinator.runtime.state
+        if state is None or not state.available:
+            return None  # Accept replacement intent, never present cached speed as current.
         value, options = self.observed_value, self.options
         return options.index(value) if value is not None and value in options else None
 
     @property
-    def extra_state_attributes(self) -> dict[str, str | bool | None]:
+    def extra_state_attributes(self) -> dict[str, str | bool | int | None]:
         state = self.coordinator.runtime.state
-        reason = state.pump1_circulation_reason if state and self.available else None
-        value = self.observed_value
+        reason = state.pump1_circulation_reason if state and state.available else None
+        value = self.observed_value if state and state.available else None
+        item = self.coordinator.runtime.engine.latest(self.control)
+        desired = item.desired if item else None
         return {
+            "requested_speed": self.options.index(desired)
+            if desired is not None and desired in self.options
+            else None,
+            "command_stage": item.stage.value.lower() if item else "idle",
             "speed_label": str(value) if value is not None else None,
             "circulation_required": True if reason else None,
             "circulation_reason": reason,

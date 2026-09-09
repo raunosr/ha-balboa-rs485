@@ -6,7 +6,7 @@ from dataclasses import replace
 from types import TracebackType
 from typing import Self
 
-from .command.engine import Action, CommandEngine, Intent, Stage
+from .command.engine import TERMINAL, Action, CommandEngine, Intent, Stage
 from .protocol.configuration import Query, encode_query
 from .protocol.messages import FaultLogMessage, FilterCyclesMessage, Message, SetupMessage
 from .protocol.settings import FilterSchedule
@@ -252,9 +252,24 @@ class SpaRuntime:
         return self.engine.state
 
     def request(
-        self, control: Control, desired: Value, *, valid: Callable[[], bool] | None = None
+        self,
+        control: Control,
+        desired: Value,
+        *,
+        valid: Callable[[], bool] | None = None,
+        deadline: float | None = None,
+        defer_for: float = 0,
+        replace_pending: bool = False,
     ) -> Intent:
-        if not self.connection.snapshot.available:
+        existing = self.engine.latest(control)
+        replacing_pump = (
+            replace_pending
+            and isinstance(control, Control)
+            and control.value.startswith("pump")
+            and existing is not None
+            and existing.stage not in TERMINAL
+        )
+        if not self.connection.snapshot.available and not replacing_pump:
             raise ValueError("Connection is not READY for physical commands")
         if control in (
             Control.CLOCK_TIME,
@@ -270,7 +285,14 @@ class SpaRuntime:
                 )
 
             valid = clock_valid
-        intent = self.engine.request(control, desired, now=asyncio.get_running_loop().time())
+        intent = self.engine.request(
+            control,
+            desired,
+            now=asyncio.get_running_loop().time(),
+            deadline=deadline,
+            defer_for=defer_for,
+            replace_pending=replace_pending,
+        )
         if valid is None:
             self._commands.guards.pop(control, None)
         else:
@@ -329,14 +351,27 @@ class SpaRuntime:
                 if current is not None and current.stage != Stage.VERIFIED:
                     self.engine.cancel(Control.FILTERS)
 
-    async def wait_for_intent(self, identifier: int, *, timeout: float = 20) -> Intent:  # noqa: ASYNC109
+    async def wait_for_intent(self, identifier: int, *, timeout: float | None = None) -> Intent:  # noqa: ASYNC109
         def completed(_: Snapshot) -> bool:
             intent = self.engine.intent(identifier)
             if intent is None:
                 raise ValueError("Intent is unknown or no longer in bounded history")
-            return intent.stage in (Stage.VERIFIED, Stage.FAILED, Stage.CANCELLED, Stage.SUPERSEDED)
+            return intent.stage in TERMINAL
 
-        await self.connection.wait_for(completed, timeout=timeout)
+        item = self.engine.intent(identifier)
+        remaining = (
+            max(0, item.deadline - asyncio.get_running_loop().time())
+            if item and item.deadline is not None
+            else (20.0 if timeout is None else timeout)
+        )
+        try:
+            await self.connection.wait_for(
+                completed, timeout=remaining if timeout is None else min(timeout, remaining)
+            )
+        except TimeoutError:
+            self.engine.tick(now=asyncio.get_running_loop().time())
+            if not completed(self.connection.snapshot):
+                raise
         intent = self.engine.intent(identifier)
         assert intent is not None
         return intent
