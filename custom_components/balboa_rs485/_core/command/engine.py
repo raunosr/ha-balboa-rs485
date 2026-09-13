@@ -35,6 +35,7 @@ class Intent:
     reminder_code: int | None = None
     deadline: float | None = None
     not_before: float = 0
+    priming: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -297,6 +298,7 @@ class CommandEngine:
             else None,
             deadline=deadline,
             not_before=now + defer_for,
+            priming=self.state.priming,
         )
         self._intents.append(item)
         self._latest[control] = item.id
@@ -325,10 +327,23 @@ class CommandEngine:
             and (state.sequence < self.state.sequence or state.observed_at < self.state.observed_at)
         ):
             return
-        if self.state is not None and self.state.epoch != state.epoch:
+        epoch_changed = self.state is not None and self.state.epoch != state.epoch
+        if epoch_changed:
             self.suspend(now=now)
         self.tick(now=now)
         self.state = state
+        # Manual priming actions belong to that operating state and socket only.
+        # Do not start an old normal-mode goal when the controller enters priming,
+        # or replay a priming goal after reconnect / return to normal operation.
+        for active_item in tuple(self._active.values()):
+            if active_item.stage not in TERMINAL and (
+                active_item.priming != state.priming or active_item.priming and epoch_changed
+            ):
+                self._update(
+                    active_item.id,
+                    Stage.CANCELLED,
+                    "Priming state or connection changed; request the control again",
+                )
         if self.resync_epoch is not None:
             if state.epoch <= self.resync_epoch or not state.available:
                 return

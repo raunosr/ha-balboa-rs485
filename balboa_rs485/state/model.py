@@ -68,7 +68,7 @@ class SpaState:
 
     @property
     def controls_safe(self) -> bool:
-        # Unknown operating modes, hold, priming and unvalidated lock bits inhibit controls.
+        # General/session admission; safe_for grants narrow manual-mode exceptions.
         data = self.status.frame.payload
         # Admission never acknowledges notifications. Unknown maintenance-range
         # reminders have an explicit non-blocking compatibility policy, while
@@ -94,6 +94,29 @@ class SpaState:
         if self.controls_safe:
             return True
         data = self.status.frame.payload
+        if self.priming:
+            # Priming is for manually running pumps, not a global control lock.
+            # On dedicated-circ systems the panel Light button can operate the
+            # circulation pump; do not assume ordinary light semantics there.
+            manual = control in (
+                Control.PUMP1,
+                Control.PUMP2,
+                Control.PUMP3,
+                Control.PUMP4,
+                Control.PUMP5,
+                Control.PUMP6,
+            ) or (
+                control in (Control.LIGHT1, Control.LIGHT2)
+                and self.configuration.capabilities.frame.payload[3] >> 6 == 0
+            )
+            return (
+                manual
+                and self.available
+                and data[0] == 0
+                and data[18] in (0, 2)
+                and not data[9] & 0xF0
+                and not data[21] & 8
+            )
         if control == Control.ACK_REMINDER:
             return (
                 self.available

@@ -1,6 +1,7 @@
 """Diagnostics expose troubleshooting evidence without endpoint or secret leakage."""
 
 import json
+from dataclasses import replace
 
 import pytest
 from homeassistant.helpers import device_registry as dr
@@ -9,6 +10,45 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from tools.simulator.server import Simulator
 
 from .test_lifecycle import eventually
+
+
+async def test_priming_native_light_service_is_allowed_without_heating_admission(
+    hass, socket_enabled, monkeypatch
+):
+    from custom_components.balboa_rs485.diagnostics import async_get_config_entry_diagnostics
+    from tools.simulator import server
+
+    base = server.load_status_fixture()
+    data = bytearray(base.payload)
+    data[1], data[2], data[18] = 1, 255, 2
+    data[10] &= ~0x30
+    monkeypatch.setattr(server, "load_status_fixture", lambda: replace(base, payload=bytes(data)))
+    async with Simulator(port=0, interval=0.03, control_lab=True) as simulator:
+        simulator.dedicated_circulation_pump = False
+        entry = MockConfigEntry(
+            domain="balboa_rs485",
+            title="Balboa Spa",
+            data={"host": "127.0.0.1", "port": simulator.port, "protocol_mode": "classic-rs485"},
+            options={"enable_controls": True},
+        )
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        try:
+            await eventually(lambda: entry.runtime_data.runtime.metadata_complete)
+            for service in ("turn_on", "turn_off"):
+                await hass.services.async_call(
+                    "light", service, {"entity_id": "light.balboa_spa_light_1"}, blocking=True
+                )
+            report = await async_get_config_entry_diagnostics(hass, entry)
+            assert report["observations"]["passive_status"]["priming"] is True
+            assert report["controls_safe"] is False
+            assert "light1" in report["permitted_controls"]
+            assert "pump1" in report["permitted_controls"]
+            assert "target" not in report["permitted_controls"]
+            assert report["commands"]["verified"] == 2
+            assert simulator.physical_commands == 2 and simulator.stats.connections == 1
+        finally:
+            await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_diagnostics_are_json_safe_redacted_and_include_verified_history(
@@ -46,6 +86,7 @@ async def test_diagnostics_are_json_safe_redacted_and_include_verified_history(
             assert report["connection"]["port"] == "**REDACTED**"
             assert report["connection"]["state"] == "READY"
             assert report["connection"]["rx_frames"] > 0
+            assert "light1" in report["permitted_controls"]
             assert report["device"]["model"] == "BP SIM"
             assert report["commands"]["window_count"] == 1
             assert report["commands"]["verified"] == 1
