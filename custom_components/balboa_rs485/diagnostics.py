@@ -106,6 +106,12 @@ async def async_get_config_entry_diagnostics(
             # Socket error strings can contain resolved IPs: do not include them.
             "error_present": snapshot.last_error is not None,
         },
+        "energy_estimate": {
+            "enabled": entry.runtime_data.energy.enabled,
+            "power_w": entry.runtime_data.energy.watts,
+            "committed_kwh": entry.runtime_data.energy.committed_kwh,
+            **entry.runtime_data.energy.attributes,
+        },
         "device": {
             "model": information.model if information else None,
             "firmware": list(information.software_version) if information else None,

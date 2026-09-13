@@ -117,6 +117,8 @@
       "pump_mode": {"name":"Pump {index} mode","state":{"off":"Off","circulation":"Circulation (1)","jets":"Jets (2)","on":"On"}}
     },
     "sensor": {
+      "estimated_power": {"name": "Estimated power"},
+      "estimated_energy": {"name": "Estimated energy"},
       "pump_command": {
         "name": "Pump 1 command",
         "state": {
@@ -209,14 +211,42 @@
     }
   },
   "options": {
+    "error": {"invalid_power": "Enter finite powers between 0 and 25000 W."},
     "step": {
+      "energy": {
+        "title": "Estimated electricity consumption",
+        "description": "Estimate, not a meter. Check your spa's electrical input ratings. Defaults: heater 3000 W, pumps 1300/350 W, separate circulation pump 250 W, each light circuit 10 W, electronics 20 W. Low speed and accessory powers are assumptions. No separate circulation power is added when pump 1 provides circulation. An active load rated 0 makes the estimate unavailable. Gaps are not backfilled. Saving does not reconnect.",
+        "data": {
+          "heater_w": "Heater (W)",
+          "electronics_w": "Electronics allowance (W)",
+          "circulation_w": "Separate circulation pump (W)",
+          "light_w": "Each light circuit (W)",
+          "blower_w": "Blower, any active speed (W; 0 = not configured)",
+          "mister_w": "Mister (W; 0 = not configured)",
+          "aux1_w": "Auxiliary 1 (W; 0 = not configured)",
+          "aux2_w": "Auxiliary 2 (W; 0 = not configured)",
+          "pump1_low_w": "Pump 1, low speed (W)",
+          "pump1_high_w": "Pump 1, high / single speed (W)",
+          "pump2_low_w": "Pump 2, low speed (W)",
+          "pump2_high_w": "Pump 2, high / single speed (W)",
+          "pump3_low_w": "Pump 3, low speed (W)",
+          "pump3_high_w": "Pump 3, high / single speed (W)",
+          "pump4_low_w": "Pump 4, low speed (W)",
+          "pump4_high_w": "Pump 4, high / single speed (W)",
+          "pump5_low_w": "Pump 5, low speed (W)",
+          "pump5_high_w": "Pump 5, high / single speed (W)",
+          "pump6_low_w": "Pump 6, low speed (W)",
+          "pump6_high_w": "Pump 6, high / single speed (W)"
+        }
+      },
       "init": {
         "title": "Controls and heating prediction",
         "description": "Only enable after selecting a verified protocol and stopping competing clients. Commands are verified from observed state. Changing this option does not reconnect.",
         "data": {
           "enable_controls": "Enable physical controls",
           "outdoor_temperature_entity": "Outdoor temperature sensor (optional)",
-          "fallback_heating_rate": "Initial heating estimate (°C/hour)"
+          "fallback_heating_rate": "Initial heating estimate (°C/hour)",
+          "enable_energy_estimate": "Enable estimated electricity consumption (not measured)"
         },
         "data_description": {
           "outdoor_temperature_entity": "Uses fresh °C/°F readings. Leave empty to learn from water temperature only. Changing the sensor resets the learned model.",

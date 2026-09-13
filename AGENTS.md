@@ -89,6 +89,16 @@ Do not check in `.research/`, virtual environments, or hardware captures.
 
 ## Agent skills
 
+### Estimated energy scope (2026-09-13)
+
+The owner's latest request resumes the optional consumption estimate subset of
+energy work: passive observed-state/nameplate-watt accounting, editable powers,
+persistent kWh and Energy Dashboard metadata. This supersedes the earlier energy
+deferral only for that subset, not pricing, automations or historical model
+training. Keep it independent of priming/recovery changes. No production
+deployment or restart is authorized by this build request.
+See `docs/estimated_energy.md` for limitations and verification.
+
 ### Issue tracker
 
 GitHub Issues in public `raunosr/ha-balboa-rs485`. See `docs/agents/issue-tracker.md`.

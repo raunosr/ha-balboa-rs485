@@ -5,6 +5,7 @@ from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .coordinator import BalboaConfigEntry, SpaCoordinator
+from .energy import energy_store
 from .prediction import model_store
 from .services import async_register_actions
 from .sessions import session_store
@@ -56,6 +57,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: BalboaConfigEntry) -> N
     """Deletion is explicit; ordinary unload/restart must retain session intent."""
     await session_store(hass, entry.entry_id).async_remove()
     await model_store(hass, entry.entry_id).async_remove()
+    await energy_store(hass, entry.entry_id).async_remove()
 
 
 async def async_options_updated(hass: HomeAssistant, entry: BalboaConfigEntry) -> None:

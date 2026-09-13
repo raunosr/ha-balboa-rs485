@@ -14,6 +14,11 @@ the [Phase 4B review](docs/phase4b_review.md) for laboratory versus hardware evi
 [prediction guide](docs/heating_prediction.md) explains the five forecast sensors,
 initial learning, optional outdoor temperature and error metrics.
 
+**Development feature (not in release 0.0.20):** optional estimated electricity
+consumption from observed actuator states and configurable input powers, with
+persistent kWh for the Energy Dashboard. It is not a meter. See the
+[energy estimate guide](docs/estimated_energy.md) for setup, defaults and gaps.
+
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
 passed, including Pump 1 high-to-low on 0.0.14 and filter readback/restoration on
 0.0.15. Low-to-High and negotiated-channel recovery did not pass on that version. Version 0.0.16

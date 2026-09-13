@@ -48,7 +48,7 @@ See `docs/bp6013_compatibility_review.md` for the exact installation/restart bou
 | 5 (complete) | Heating sessions/actions/Store, expiry and restart intent restoration |
 | 6 (complete) | Heating windows, lightweight online regression, persistence, integrated ETA, held-out thermal simulation evaluation; five native sensors and actual HA options/UI acceptance |
 | 4B (after 6, before 7) | Complete the supported native sensor/control/diagnostic gaps in entity_parity.md; individually verify semantics, simulator tests and safe hardware acceptance. Phase 4's completed adapter foundation did not mean full MQTT parity |
-| 7 | Optional measured energy/power and provider-neutral prices, interval costs/statistics |
+| 7 | Optional measured energy/power and provider-neutral prices, interval costs/statistics. The 2026-09-13 request adds a separately scoped passive consumption estimate; see estimated_energy.md. This does not complete the measured-energy/pricing phase |
 | 8 | Separate `balboa-spa-card` repository, simple/auto card, device discovery, theme/grid/demo fixtures |
 | 9 | Detailed controls, sessions, prediction, responsive charts and energy periods |
 | 10 | Automation blueprints and tests/docs |
