@@ -8,9 +8,19 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from ._core.energy import DEFAULT_POWERS, powers
 from ._core.transport.connection import SpaConnection
 from ._core.transport.policy import Mode
-from .const import CONF_CONTROLS, CONF_DIRECT_RISK, CONF_FALLBACK, CONF_MODE, CONF_OUTDOOR, DOMAIN
+from .const import (
+    CONF_CONTROLS,
+    CONF_DIRECT_RISK,
+    CONF_ENERGY,
+    CONF_ENERGY_POWERS,
+    CONF_FALLBACK,
+    CONF_MODE,
+    CONF_OUTDOOR,
+    DOMAIN,
+)
 
 CONNECTION_SCHEMA = vol.Schema(
     {
@@ -123,7 +133,10 @@ class BalboaOptionsFlow(OptionsFlow):
                 for key, value in self.config_entry.options.items()
                 if key not in (CONF_CONTROLS, CONF_OUTDOOR, CONF_FALLBACK)
             }
-            return self.async_create_entry(data={**retained, **user_input})
+            self._pending_options = {**retained, **user_input}
+            if self._pending_options.get(CONF_ENERGY) is True:
+                return await self.async_step_energy()
+            return self.async_create_entry(data=self._pending_options)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -142,6 +155,37 @@ class BalboaOptionsFlow(OptionsFlow):
                     vol.Required(
                         CONF_FALLBACK, default=self.config_entry.options.get(CONF_FALLBACK, 2.0)
                     ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=8)),
+                    vol.Optional(
+                        CONF_ENERGY,
+                        description={
+                            "suggested_value": self.config_entry.options.get(CONF_ENERGY, False)
+                        },
+                    ): bool,
                 }
             ),
+        )
+
+    async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors = {}
+        if user_input is not None:
+            try:
+                profile = powers(user_input)
+            except ValueError:
+                errors["base"] = "invalid_power"
+            else:
+                return self.async_create_entry(
+                    data={**self._pending_options, CONF_ENERGY_POWERS: profile}
+                )
+        defaults = {**DEFAULT_POWERS, **self.config_entry.options.get(CONF_ENERGY_POWERS, {})}
+        return self.async_show_form(
+            step_id="energy",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(key, default=value): vol.All(
+                        vol.Coerce(float), vol.Range(min=0, max=25000)
+                    )
+                    for key, value in defaults.items()
+                }
+            ),
+            errors=errors,
         )

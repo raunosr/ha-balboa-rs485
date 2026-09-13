@@ -17,6 +17,7 @@ from ._core.state.model import Control, Value
 from ._core.transport.connection import Snapshot
 from ._core.transport.policy import Mode
 from .const import CONF_CONTROLS, CONF_DIRECT_RISK, CONF_MODE, DOMAIN
+from .energy import EnergyController
 from .prediction import PredictionController
 from .sessions import SessionController
 
@@ -47,6 +48,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
         self._deadlines: dict[int, float] = {}
         self.sessions = SessionController(self)
         self.prediction = PredictionController(self)
+        self.energy = EnergyController(self)
 
     @property
     def controls_enabled(self) -> bool:
@@ -55,6 +57,8 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
     @callback
     def async_options_updated(self) -> None:
         self.prediction.configure()
+        self.energy.configure()
+        self.energy.observe(self.runtime.connection.snapshot)
         self.prediction.observe(self.runtime.connection.snapshot)
         if not self.controls_enabled:
             self._cancel_pending()
@@ -142,6 +146,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
     async def async_open(self) -> None:
         await self.sessions.async_load()
         await self.prediction.async_load()
+        await self.energy.async_load()
         await self.runtime.__aenter__()
         self._opened = True
         try:
@@ -162,6 +167,8 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
         )
         self.sessions.start()
         self.prediction.start()
+        self.energy.observe(self.runtime.connection.snapshot)
+        self.energy.start()
 
     async def async_filter_change(
         self,
@@ -209,6 +216,7 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
             except TimeoutError:
                 snapshot = self.runtime.connection.snapshot
             self.prediction.observe(snapshot)
+            self.energy.observe(snapshot)
             self._update_device_information(snapshot)
             self.async_set_updated_data(snapshot)
 
@@ -247,7 +255,10 @@ class SpaCoordinator(DataUpdateCoordinator[Snapshot]):
                     finally:
                         self.async_set_updated_data(self.runtime.connection.snapshot)
                         # Persistence can wait only after the bus is relinquished.
-                        await self.prediction.async_close()
+                        try:
+                            await self.prediction.async_close()
+                        finally:
+                            await self.energy.async_close()
 
 
 type BalboaConfigEntry = ConfigEntry[SpaCoordinator]

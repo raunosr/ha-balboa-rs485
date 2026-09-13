@@ -145,6 +145,8 @@ async def async_setup_entry(
     async_add_entities(
         [
             ConnectionSensor(entry.runtime_data),
+            EstimatedPowerSensor(entry.runtime_data),
+            EstimatedEnergySensor(entry.runtime_data),
             PumpCommandSensor(entry.runtime_data),
             HeatingSessionSensor(entry.runtime_data),
             WaterTemperatureSensor(entry.runtime_data),
@@ -163,6 +165,52 @@ async def async_setup_entry(
             ),
         ]
     )
+
+
+class EstimatedPowerSensor(BalboaEntity, SensorEntity):
+    """Observed duty cycle times configured watts, not an electrical measurement."""
+
+    _attr_translation_key = "estimated_power"
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "W"
+
+    def __init__(self, coordinator: SpaCoordinator) -> None:
+        super().__init__(coordinator, "estimated_power")
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.energy.enabled and self.coordinator.energy.watts is not None
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.energy.watts
+
+
+class EstimatedEnergySensor(BalboaEntity, SensorEntity):
+    """Durably checkpointed lifetime total; freezes instead of filling telemetry gaps."""
+
+    _attr_translation_key = "estimated_energy"
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = "kWh"
+    _attr_suggested_display_precision = 3
+
+    def __init__(self, coordinator: SpaCoordinator) -> None:
+        super().__init__(coordinator, "estimated_energy")
+
+    @property
+    def available(self) -> bool:
+        energy = self.coordinator.energy
+        return energy.enabled and energy.committed_kwh is not None
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.energy.committed_kwh
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self.coordinator.energy.attributes
 
 
 class PumpCommandSensor(BalboaEntity, SensorEntity):

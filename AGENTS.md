@@ -89,6 +89,19 @@ Do not check in `.research/`, virtual environments, or hardware captures.
 
 ## Agent skills
 
+### Estimated energy scope (2026-09-13)
+
+The owner's latest request resumes the optional consumption estimate subset of
+energy work: passive observed-state/nameplate-watt accounting, editable powers,
+persistent kWh and Energy Dashboard metadata. This supersedes the earlier energy
+deferral only for that subset, not pricing, automations or historical model
+training. Keep it independent of priming/recovery changes. The subsequent owner
+request authorizes packaging, normal reviewed PR14 merge after required checks,
+v0.0.21 HACS publication and installation. It authorizes no HA restart, automatic
+merge or protection bypass. Record installation privately in
+`.research/energy-0.0.21-deployment.md`; request fresh activation permission.
+See `docs/estimated_energy.md` for limitations and verification.
+
 ### Issue tracker
 
 GitHub Issues in public `raunosr/ha-balboa-rs485`. See `docs/agents/issue-tracker.md`.

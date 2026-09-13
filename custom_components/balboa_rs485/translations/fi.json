@@ -117,6 +117,8 @@
       "pump_mode": {"name":"Pumpun {index} tila","state":{"off":"Pois","circulation":"Kierto (1)","jets":"Poreet (2)","on":"Päällä"}}
     },
     "sensor": {
+      "estimated_power": {"name": "Arvioitu sähköteho"},
+      "estimated_energy": {"name": "Arvioitu sähkönkulutus"},
       "pump_command": {
         "name": "Pump 1 -ohjauksen tila",
         "state": {
@@ -209,14 +211,42 @@
     }
   },
   "options": {
+    "error": {"invalid_power": "Syötä äärelliset tehot väliltä 0–25000 W."},
     "step": {
+      "energy": {
+        "title": "Sähkönkulutuksen arvio",
+        "description": "Arvio, ei mittaus. Tarkista oman altaasi sähkötehot. Oletukset: lämmitin 3000 W, pumput 1300/350 W, erillinen kiertovesipumppu 250 W, valopiiri 10 W ja elektroniikka 20 W. Hidas nopeus ja lisälaitteet ovat oletuksia. Erillistä kiertopumppua ei lasketa, jos kierron hoitaa pumppu 1. Aktiivinen laite, jonka teho on 0, keskeyttää arvion. Katkosten kulutusta ei täydennetä. Muutos ei katkaise yhteyttä.",
+        "data": {
+          "heater_w": "Lämmitin (W)",
+          "electronics_w": "Elektroniikan kulutusvara (W)",
+          "circulation_w": "Erillinen kiertovesipumppu (W)",
+          "light_w": "Valopiiri, kukin (W)",
+          "blower_w": "Puhallin, kaikki käyntinopeudet (W; 0 = määrittämättä)",
+          "mister_w": "Sumutin (W; 0 = määrittämättä)",
+          "aux1_w": "Lisälaite 1 (W; 0 = määrittämättä)",
+          "aux2_w": "Lisälaite 2 (W; 0 = määrittämättä)",
+          "pump1_low_w": "Pumppu 1, hidas nopeus (W)",
+          "pump1_high_w": "Pumppu 1, suuri / ainoa nopeus (W)",
+          "pump2_low_w": "Pumppu 2, hidas nopeus (W)",
+          "pump2_high_w": "Pumppu 2, suuri / ainoa nopeus (W)",
+          "pump3_low_w": "Pumppu 3, hidas nopeus (W)",
+          "pump3_high_w": "Pumppu 3, suuri / ainoa nopeus (W)",
+          "pump4_low_w": "Pumppu 4, hidas nopeus (W)",
+          "pump4_high_w": "Pumppu 4, suuri / ainoa nopeus (W)",
+          "pump5_low_w": "Pumppu 5, hidas nopeus (W)",
+          "pump5_high_w": "Pumppu 5, suuri / ainoa nopeus (W)",
+          "pump6_low_w": "Pumppu 6, hidas nopeus (W)",
+          "pump6_high_w": "Pumppu 6, suuri / ainoa nopeus (W)"
+        }
+      },
       "init": {
         "title": "Ohjaukset ja lämmitysennuste",
         "description": "Salli ohjaukset vasta protokollan varmistamisen ja muiden asiakkaiden sammuttamisen jälkeen. Komennot varmennetaan havaitusta tilasta. Asetuksen muuttaminen ei katkaise yhteyttä.",
         "data": {
           "enable_controls": "Salli laiteohjaukset",
           "outdoor_temperature_entity": "Ulkolämpötilasensori (valinnainen)",
-          "fallback_heating_rate": "Alustava lämmitysnopeus (°C/tunti)"
+          "fallback_heating_rate": "Alustava lämmitysnopeus (°C/tunti)",
+          "enable_energy_estimate": "Ota sähkönkulutuksen arvio käyttöön (ei mittaus)"
         },
         "data_description": {
           "outdoor_temperature_entity": "Käyttää tuoreita °C/°F-lukemia. Tyhjänä malli oppii vain veden lämpötilasta. Sensorin vaihtaminen nollaa opitun mallin.",
