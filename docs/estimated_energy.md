@@ -85,7 +85,11 @@ Analytical tests cover ratings, six pumps, circulation, unknown states, gaps,
 duplicate timestamps, epochs, profile boundaries and restoration. Actual HA tests
 cover options, entity metadata, storage faults, background checkpoints and a
 loopback-only simulator with physical controls disabled. Execution results are
-recorded after the full suite. No production installation/acceptance is claimed.
+recorded in [PR14](https://github.com/raunosr/ha-balboa-rs485/pull/14).
+Local full core: 712 passed, 97.05% coverage; energy accounting module 100%.
+Ruff, formatting, strict core typing and bundled-core validation passed.
+Required CI includes the actual HA suite, isolated installation and HA typing.
+No production installation/acceptance is claimed.
 
 This is only the requested estimate subset of Phase 7. External measured energy,
 pricing, cost statistics and automation migration remain separate.

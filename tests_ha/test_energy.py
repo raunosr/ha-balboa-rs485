@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import voluptuous_serialize
+from homeassistant.const import EVENT_HOMEASSISTANT_FINAL_WRITE
 from homeassistant.core import CoreState
 from homeassistant.helpers import config_validation as cv
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -80,6 +81,8 @@ async def test_refresh_stale_duplicates_and_epoch_do_not_invent_energy(hass):
     initial = snapshot(energy, 100)
     energy.observe(replace(initial, state=ConnectionState.SYNCHRONIZING))
     assert energy.watts is None  # no ready observation in this epoch yet
+    # The following synthetic timestamps start a separate deterministic interval.
+    energy.counter = EnergyCounter()
     energy.observe(initial)
     energy.observe(snapshot(energy, 105, 2))
     energy.observe(snapshot(energy, 105, 2))
@@ -136,6 +139,10 @@ async def test_write_failure_retry_and_stopping_do_not_publish_unstored_energy(h
     hass.set_state(CoreState.stopping)
     await energy.async_checkpoint()
     assert energy.committed_kwh == 2
+    hass.set_state(CoreState.final_write)
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_FINAL_WRITE)
+    await hass.async_block_till_done()
+    assert (await energy.store.async_load())["kwh"] == 3
     hass.set_state(CoreState.running)
 
 
@@ -198,6 +205,11 @@ async def test_sensor_metadata_frozen_offline_total_and_options_without_reconnec
             await hass.async_block_till_done()
             await eventually(lambda: energy.watts is not None)
             await energy.async_checkpoint()
+            await hass.async_block_till_done()
+            state = hass.states.get("sensor.balboa_spa_estimated_energy")
+            assert state is not None and float(state.state) >= 0
+            assert state.attributes["device_class"] == "energy"
+            assert state.attributes["state_class"] == "total_increasing"
             entity = EstimatedEnergySensor(entry.runtime_data)
             assert entity.device_class == "energy" and entity.state_class == "total_increasing"
             assert entity.native_unit_of_measurement == "kWh"
@@ -218,6 +230,43 @@ async def test_sensor_metadata_frozen_offline_total_and_options_without_reconnec
             await hass.config_entries.async_unload(entry.entry_id)
             assert not power.available
             assert entity.available and entity.native_value is not None
+            committed = energy.committed_kwh
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await eventually(lambda: entry.runtime_data.energy.watts is not None)
+            assert entry.runtime_data.energy.committed_kwh == committed
+            assert simulator.physical_commands == 0
         finally:
-            if entry.runtime_data._opened:
+            if hasattr(entry, "runtime_data") and entry.runtime_data._opened:
                 await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_disable_before_first_checkpoint_saves_and_entry_deletion_removes_store(hass):
+    from custom_components.balboa_rs485 import async_remove_entry
+
+    energy = controller(hass)
+    energy.counter = EnergyCounter(0.01, 10, 0)
+    hass.config_entries.async_update_entry(energy.coordinator.entry, options={})
+    energy.configure()
+    await energy.async_close()
+    assert energy.committed_kwh == 0.01
+    assert await energy.store.async_load() == energy.counter.record()
+    await async_remove_entry(hass, energy.coordinator.entry)
+    assert await energy.store.async_load() is None
+
+
+async def test_invalid_power_form_returns_error_without_changing_options(hass):
+    energy = controller(hass)
+    flow = await hass.config_entries.options.async_init(energy.coordinator.entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        flow["flow_id"],
+        user_input={
+            "enable_controls": False,
+            "fallback_heating_rate": 2,
+            "enable_energy_estimate": True,
+        },
+    )
+    # Exercise the step's defensive boundary too; HTTP schema rejects these first.
+    handler = hass.config_entries.options._progress[flow["flow_id"]]
+    result = await handler.async_step_energy({"heater_w": float("nan")})
+    assert result["errors"] == {"base": "invalid_power"}
+    assert energy.coordinator.entry.options == {"enable_energy_estimate": True}

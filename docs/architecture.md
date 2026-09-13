@@ -29,7 +29,7 @@ the existing local directory name need not match the GitHub name.
 | Command | Coalesced desired state, next action, confirmation, history | Blind toggle retries |
 | Session | Timed heating intent, restoration, persisted intent | Persisted wire commands |
 | Prediction | Heating segments, regression, integrated ETA, error metrics | Spa control |
-| Energy | Measured deltas / integrated power, interval price accounting | Claiming estimates are measurements |
+| Energy | Optional observed-state/input-watt estimate with gap-aware integration and checkpointed kWh; measured deltas/pricing remain future work | Commands, optimistic actuator states, claiming estimates are measurements |
 | HA adapter | ConfigEntry lifecycle, entities, Store, diagnostics, statistics | Protocol parsing |
 | Frontend | HA entity discovery, responsive themed views, history | Protocol logic |
 | Blueprints | User automation and optional price optimization | Provider coupling in core |
