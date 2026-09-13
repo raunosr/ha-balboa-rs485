@@ -15,7 +15,7 @@ from custom_components.balboa_rs485._core.protocol.configuration import Configur
 from custom_components.balboa_rs485._core.protocol.messages import HeatState, decode_message
 from custom_components.balboa_rs485._core.transport.connection import ConnectionState
 from custom_components.balboa_rs485.coordinator import SpaCoordinator
-from custom_components.balboa_rs485.energy import EnergyController
+from custom_components.balboa_rs485.energy import EnergyController, energy_store
 from custom_components.balboa_rs485.sensor import EstimatedEnergySensor, EstimatedPowerSensor
 from tools.simulator.server import Simulator, configuration_fixture, load_status_fixture
 
@@ -251,7 +251,8 @@ async def test_disable_before_first_checkpoint_saves_and_entry_deletion_removes_
     assert energy.committed_kwh == 0.01
     assert await energy.store.async_load() == energy.counter.record()
     await async_remove_entry(hass, energy.coordinator.entry)
-    assert await energy.store.async_load() is None
+    # HA's storage fixture retains the old owner's loaded _data after deletion.
+    assert await energy_store(hass, energy.coordinator.entry.entry_id).async_load() is None
 
 
 async def test_invalid_power_form_returns_error_without_changing_options(hass):

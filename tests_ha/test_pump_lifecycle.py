@@ -116,6 +116,11 @@ async def test_shared_deadline_fails_cleanly_and_does_not_keep_retrying(
             count = simulator.physical_commands
             assert 1 <= count <= coordinator.runtime.engine.max_actions
             await eventually(lambda: coordinator.runtime.connection.snapshot.available)
+            # The coordinator/entity update follows the runtime recovery. HA
+            # silently skips a service target that is still marked unavailable.
+            await eventually(
+                lambda: hass.states.get("light.balboa_spa_light_1").state == "off"
+            )
             await hass.services.async_call(
                 "light", "turn_on", {"entity_id": "light.balboa_spa_light_1"}, blocking=True
             )
