@@ -89,6 +89,16 @@ Do not check in `.research/`, virtual environments, or hardware captures.
 
 ## Agent skills
 
+### Current priming correction
+
+The 2026-09-13 owner requested replacing the global priming control lock with
+per-control admission. See `docs/priming_admission_review.md`: explicit manual
+pumps and non-dedicated-circ lights only; preserve heating/session, mode, lock,
+freshness and confirmation guards. Never automatically exit priming or replay
+old priming intents across socket epochs. The unpublished six-minute reconnect
+heuristic was rejected and removed. Production activation is not yet authorized
+by this local correction; no historical restart allowance may be reused.
+
 ### Issue tracker
 
 GitHub Issues in public `raunosr/ha-balboa-rs485`. See `docs/agents/issue-tracker.md`.
