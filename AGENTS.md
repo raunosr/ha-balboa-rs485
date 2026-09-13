@@ -95,8 +95,11 @@ The owner's latest request resumes the optional consumption estimate subset of
 energy work: passive observed-state/nameplate-watt accounting, editable powers,
 persistent kWh and Energy Dashboard metadata. This supersedes the earlier energy
 deferral only for that subset, not pricing, automations or historical model
-training. Keep it independent of priming/recovery changes. No production
-deployment or restart is authorized by this build request.
+training. Keep it independent of priming/recovery changes. The subsequent owner
+request authorizes packaging, normal reviewed PR14 merge after required checks,
+v0.0.21 HACS publication and installation. It authorizes no HA restart, automatic
+merge or protection bypass. Record installation privately in
+`.research/energy-0.0.21-deployment.md`; request fresh activation permission.
 See `docs/estimated_energy.md` for limitations and verification.
 
 ### Issue tracker

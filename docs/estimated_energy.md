@@ -88,8 +88,10 @@ loopback-only simulator with physical controls disabled. Execution results are
 recorded in [PR14](https://github.com/raunosr/ha-balboa-rs485/pull/14).
 Local full core: 712 passed, 97.05% coverage; energy accounting module 100%.
 Ruff, formatting, strict core typing and bundled-core validation passed.
-Required CI includes the actual HA suite, isolated installation and HA typing.
-No production installation/acceptance is claimed.
+Required CI passed: 124 actual HA tests (97.76% adapter coverage; energy adapter
+100%), one isolated installation test, HA typing and HACS validation.
+Version 0.0.21 packages this optional estimate. These results are laboratory
+verification, not production activation or calibrated energy acceptance.
 
 This is only the requested estimate subset of Phase 7. External measured energy,
 pricing, cost statistics and automation migration remain separate.

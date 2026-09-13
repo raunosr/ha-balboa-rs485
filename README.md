@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.20.** Native observations, controller diagnostics,
+**Experimental release 0.0.21.** Native observations, controller diagnostics,
 a discrete Pump 1 speed slider, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -14,9 +14,10 @@ the [Phase 4B review](docs/phase4b_review.md) for laboratory versus hardware evi
 [prediction guide](docs/heating_prediction.md) explains the five forecast sensors,
 initial learning, optional outdoor temperature and error metrics.
 
-**Development feature (not in release 0.0.20):** optional estimated electricity
+**New in 0.0.21:** optional estimated electricity
 consumption from observed actuator states and configurable input powers, with
-persistent kWh for the Energy Dashboard. It is not a meter. See the
+persistent kWh for the Energy Dashboard. Disabled by default; review power ratings
+before enabling it. It is not a meter. See the
 [energy estimate guide](docs/estimated_energy.md) for setup, defaults and gaps.
 
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
