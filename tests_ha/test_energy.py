@@ -1,7 +1,7 @@
 """Energy metadata, options and durability in actual HA, never a production endpoint."""
 
 from dataclasses import replace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 import voluptuous_serialize
@@ -71,6 +71,21 @@ def ambiguous_circulation_snapshot(energy, at, sequence=1, *, circulation_runnin
     )
 
 
+def update_options(energy, cached_snapshot, **changes):
+    with patch.object(
+        type(energy.coordinator.runtime.connection),
+        "snapshot",
+        new_callable=PropertyMock,
+        return_value=cached_snapshot,
+    ):
+        hass = energy.coordinator.hass
+        hass.config_entries.async_update_entry(
+            energy.coordinator.entry,
+            options={**energy.coordinator.entry.options, **changes},
+        )
+        energy.coordinator.async_options_updated()
+
+
 @pytest.mark.parametrize(
     "circulation,running,expected",
     [
@@ -103,7 +118,16 @@ async def test_circulation_configuration_preserves_the_configured_idle_load(
     assert not energy.attributes["circulation_configuration_required"]
 
 
-async def test_circulation_change_breaks_the_interval_without_resetting_totals(hass):
+@pytest.mark.parametrize(
+    "changes,expected_watts",
+    [
+        ({"energy_circulation": "present"}, 290),
+        ({"energy_powers": {"electronics_w": 60}}, 60),
+    ],
+)
+async def test_options_callback_excludes_cached_status_after_accounting_change(
+    hass, changes, expected_watts
+):
     energy = controller(hass, energy_circulation="absent", energy_powers={"electronics_w": 40})
     for at, sequence in [(100, 1), (105, 2)]:
         energy.observe(
@@ -112,16 +136,38 @@ async def test_circulation_change_breaks_the_interval_without_resetting_totals(h
     await energy.async_checkpoint()
     committed = energy.committed_kwh
     assert committed == pytest.approx(40 * 5 / 3_600_000)
-    hass.config_entries.async_update_entry(
-        energy.coordinator.entry,
-        options={**energy.coordinator.entry.options, "energy_circulation": "present"},
+    update_options(
+        energy,
+        ambiguous_circulation_snapshot(energy, 105, 2, circulation_running=True),
+        **changes,
     )
-    energy.configure()
+    assert energy.watts == expected_watts
     energy.observe(ambiguous_circulation_snapshot(energy, 110, 3, circulation_running=True))
     assert energy.counter.kwh == committed
     assert energy.committed_kwh == committed
     energy.observe(ambiguous_circulation_snapshot(energy, 115, 4, circulation_running=True))
-    assert energy.counter.kwh == pytest.approx(committed + 290 * 5 / 3_600_000)
+    assert energy.counter.kwh == pytest.approx(committed + expected_watts * 5 / 3_600_000)
+    assert energy.counter.known_seconds == 10
+    await energy.async_close()
+
+
+async def test_reenabling_does_not_count_a_cached_observation_from_the_disabled_period(hass):
+    energy = controller(hass, energy_circulation="absent", energy_powers={"electronics_w": 40})
+    energy.observe(ambiguous_circulation_snapshot(energy, 100))
+    cached = ambiguous_circulation_snapshot(energy, 105, 2)
+    energy.observe(cached)
+    committed = energy.counter.kwh
+    assert committed == pytest.approx(40 * 5 / 3_600_000)
+    update_options(energy, cached, enable_energy_estimate=False)
+    cached = ambiguous_circulation_snapshot(energy, 110, 3)
+    energy.observe(cached)
+    assert energy.watts is None
+    update_options(energy, cached, enable_energy_estimate=True)
+    assert energy.watts == 40
+    energy.observe(ambiguous_circulation_snapshot(energy, 115, 4))
+    assert energy.counter.kwh == committed
+    energy.observe(ambiguous_circulation_snapshot(energy, 120, 5))
+    assert energy.counter.kwh == pytest.approx(committed + 40 * 5 / 3_600_000)
     assert energy.counter.known_seconds == 10
     await energy.async_close()
 
