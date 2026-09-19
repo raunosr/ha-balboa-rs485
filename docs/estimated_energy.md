@@ -26,6 +26,9 @@ state. They affect energy accounting only: command admission, pump controls and
 protocol decoding are unchanged. Changing the choice breaks the current accounting
 interval without resetting or recalculating accrued kWh. Existing entries default
 to Automatic. The selector is available from v0.0.22; it is absent from v0.0.21.
+After a circulation or power-rating change, or re-enabling the estimate, the
+cached status may refresh displayed power but cannot seed an accounting interval.
+The first new status establishes the baseline; accrual resumes with the next one.
 
 | Load | Initial power | Qualification |
 | --- | ---: | --- |

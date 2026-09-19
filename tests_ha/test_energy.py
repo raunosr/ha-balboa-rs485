@@ -101,7 +101,9 @@ async def test_circulation_configuration_preserves_the_configured_idle_load(
 ):
     energy = controller(hass, energy_circulation=circulation, energy_powers={"electronics_w": 40})
     energy.observe(ambiguous_circulation_snapshot(energy, 100, circulation_running=running))
-    energy.observe(ambiguous_circulation_snapshot(energy, 105, 2, circulation_running=running))
+    observed = ambiguous_circulation_snapshot(energy, 105, 2, circulation_running=running)
+    energy.observe(observed)
+    energy.coordinator.async_set_updated_data(observed)
     assert energy.watts == expected
     assert energy.counter.known_seconds == (0 if expected is None else 5)
     assert energy.attributes["circulation_configuration"] == circulation

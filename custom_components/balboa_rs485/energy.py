@@ -43,6 +43,7 @@ class EnergyController:
         self._load_failed = False
         self._ready_epoch: int | None = None
         self._last_sample: tuple[int, int, bool] | None = None
+        self._configuration_sample: tuple[int, int] | None = None
         self._task: asyncio.Task[None] | None = None
         self._save_lock = asyncio.Lock()
         self.enabled = False
@@ -65,6 +66,8 @@ class EnergyController:
         if self.profile != profile or self.enabled != enabled or self.circulation != circulation:
             self.counter.break_interval()
             self._last_sample = None
+            snapshot = self.coordinator.runtime.connection.snapshot
+            self._configuration_sample = (snapshot.epoch, snapshot.status_sequence)
             self.watts = None
             self.circulation_configuration_required = False
         self.enabled, self.profile, self.circulation = enabled, profile, circulation
@@ -120,7 +123,13 @@ class EnergyController:
             )
             self.watts = estimate(state, self.profile, circulation=self.circulation)
         key = (snapshot.epoch, snapshot.status_sequence, healthy)
-        if not self.enabled or self._load_failed or key == self._last_sample:
+        # Cached options replay may update power, but cannot seed a new energy interval.
+        if (
+            not self.enabled
+            or self._load_failed
+            or key == self._last_sample
+            or key[:2] == self._configuration_sample
+        ):
             return
         self._last_sample = key
         at = snapshot.health.last_status if healthy else self.coordinator.hass.loop.time()
