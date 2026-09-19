@@ -10,8 +10,9 @@ from homeassistant.core import CoreState
 from homeassistant.helpers import config_validation as cv
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from balboa_rs485.protocol.configuration import Query
 from custom_components.balboa_rs485._core.energy import EnergyCounter
-from custom_components.balboa_rs485._core.protocol.configuration import Configuration, Query
+from custom_components.balboa_rs485._core.protocol.configuration import Configuration
 from custom_components.balboa_rs485._core.protocol.frames import Frame
 from custom_components.balboa_rs485._core.protocol.messages import HeatState, decode_message
 from custom_components.balboa_rs485._core.transport.connection import ConnectionState
