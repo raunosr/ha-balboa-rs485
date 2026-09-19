@@ -9,10 +9,16 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from ._core.energy import EnergyCounter, estimate, powers
+from ._core.energy import (
+    CirculationPump,
+    EnergyCounter,
+    circulation_pump_present,
+    estimate,
+    powers,
+)
 from ._core.state.model import SpaState
 from ._core.transport.connection import ConnectionState, Snapshot
-from .const import CONF_ENERGY, CONF_ENERGY_POWERS, DOMAIN
+from .const import CONF_ENERGY, CONF_ENERGY_CIRCULATION, CONF_ENERGY_POWERS, DOMAIN
 
 if TYPE_CHECKING:
     from .coordinator import SpaCoordinator
@@ -41,6 +47,8 @@ class EnergyController:
         self._save_lock = asyncio.Lock()
         self.enabled = False
         self.profile = powers({})
+        self.circulation = CirculationPump.AUTO
+        self.circulation_configuration_required = False
         self.configure()
 
     def configure(self) -> None:
@@ -48,15 +56,18 @@ class EnergyController:
         enabled = options.get(CONF_ENERGY) is True
         try:
             profile = powers(options.get(CONF_ENERGY_POWERS, {}))
+            circulation = CirculationPump(options.get(CONF_ENERGY_CIRCULATION, "auto"))
         except (ValueError, TypeError, AttributeError):
             # Malformed optional settings must never break physical controls.
             profile, enabled = powers({}), False
-            _LOGGER.error("Invalid energy power profile; estimate disabled")
-        if self.profile != profile or self.enabled != enabled:
+            circulation = CirculationPump.AUTO
+            _LOGGER.error("Invalid energy estimate settings; estimate disabled")
+        if self.profile != profile or self.enabled != enabled or self.circulation != circulation:
             self.counter.break_interval()
             self._last_sample = None
             self.watts = None
-        self.enabled, self.profile = enabled, profile
+            self.circulation_configuration_required = False
+        self.enabled, self.profile, self.circulation = enabled, profile, circulation
 
     async def async_load(self) -> None:
         try:
@@ -101,7 +112,13 @@ class EnergyController:
             and snapshot.health.last_status is not None
             and state is not None
         )
-        self.watts = estimate(state, self.profile) if self.enabled and healthy and state else None
+        self.circulation_configuration_required = False
+        self.watts = None
+        if self.enabled and healthy and state:
+            self.circulation_configuration_required = (
+                circulation_pump_present(state, self.circulation) is None
+            )
+            self.watts = estimate(state, self.profile, circulation=self.circulation)
         key = (snapshot.epoch, snapshot.status_sequence, healthy)
         if not self.enabled or self._load_failed or key == self._last_sample:
             return
@@ -160,8 +177,16 @@ class EnergyController:
             with suppress(asyncio.CancelledError):
                 await task
         self.watts = None
+        self.circulation_configuration_required = False
         self.counter.break_interval()
         await self.async_checkpoint()
+
+    @property
+    def configuration_attributes(self) -> dict[str, str | bool]:
+        return {
+            "circulation_configuration": self.circulation.value,
+            "circulation_configuration_required": self.circulation_configuration_required,
+        }
 
     @property
     def attributes(self) -> dict[str, Any]:
@@ -172,4 +197,5 @@ class EnergyController:
             "unobserved_runtime_seconds": round(self._committed_record["unknown_seconds"], 1),
             "storage_error": self.storage_error,
             "power_profile_w": self.profile,
+            **self.configuration_attributes,
         }

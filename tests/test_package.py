@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from balboa_rs485.energy import CirculationPump
 from tools.package import sync_core
 
 
@@ -116,6 +117,9 @@ def test_hacs_version_local_icon_and_bilingual_strings_are_bundled():
         }
 
     assert keys(english) == keys(finnish)
+    assert set(english["selector"]["energy_circulation"]["options"]) == {
+        choice.value for choice in CirculationPump
+    }
     icon = (component / "brand/icon.png").read_bytes()
     assert icon[:8] == b"\x89PNG\r\n\x1a\n"
     width, height = struct.unpack(">II", icon[16:24])

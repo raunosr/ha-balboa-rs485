@@ -3,7 +3,7 @@
 <img src="custom_components/balboa_rs485/brand/icon.png" width="128" alt="Original Balboa RS485 spa icon">
 
 Native, local Home Assistant integration using an Elfin EW11/EW11A raw TCP bridge.
-**Experimental release 0.0.21.** Native observations, controller diagnostics,
+**Experimental release 0.0.22.** Native observations, controller diagnostics,
 a discrete Pump 1 speed slider, Low/High profiles, two filter schedules with start/end time
 controls, and durable bathing sessions with a 36.5 C default minimum are implemented.
 Supported pumps, blower, lights and accessories are discovered from the controller;
@@ -14,11 +14,17 @@ the [Phase 4B review](docs/phase4b_review.md) for laboratory versus hardware evi
 [prediction guide](docs/heating_prediction.md) explains the five forecast sensors,
 initial learning, optional outdoor temperature and error metrics.
 
-**New in 0.0.21:** optional estimated electricity
-consumption from observed actuator states and configurable input powers, with
-persistent kWh for the Energy Dashboard. Disabled by default; review power ratings
-before enabling it. It is not a meter. See the
-[energy estimate guide](docs/estimated_energy.md) for setup, defaults and gaps.
+**New in 0.0.22:** an energy-only circulation-pump configuration resolves
+unavailable estimates when the controller's equipment descriptor is ambiguous.
+For a verified Pump 1 circulation installation, choose **No separate circulation
+pump**. Pump controls and protocol decoding are unchanged. See the
+[release notes](docs/release_0_0_22.md).
+
+Optional estimated electricity consumption, introduced in 0.0.21, uses observed
+actuator states and configurable input powers, with persistent kWh for the Energy
+Dashboard. Disabled by default; review power ratings before enabling it. It is not
+a meter. See the [energy estimate guide](docs/estimated_energy.md) for setup,
+defaults and gaps.
 
 **Not yet a fully accepted BWALink replacement.** Bounded light/pump tests have
 passed, including Pump 1 high-to-low on 0.0.14 and filter readback/restoration on

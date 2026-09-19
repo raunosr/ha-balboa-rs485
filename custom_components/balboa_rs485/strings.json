@@ -210,13 +210,26 @@
       }
     }
   },
+  "selector": {
+    "energy_circulation": {
+      "options": {
+        "auto": "Automatic (controller configuration)",
+        "absent": "No separate circulation pump",
+        "present": "Separate circulation pump installed"
+      }
+    }
+  },
   "options": {
-    "error": {"invalid_power": "Enter finite powers between 0 and 25000 W."},
+    "error": {
+      "invalid_power": "Enter finite powers between 0 and 25000 W.",
+      "invalid_circulation": "Select a valid circulation pump configuration."
+    },
     "step": {
       "energy": {
         "title": "Estimated electricity consumption",
-        "description": "Estimate, not a meter. Check your spa's electrical input ratings. Defaults: heater 3000 W, pumps 1300/350 W, separate circulation pump 250 W, each light circuit 10 W, electronics 20 W. Low speed and accessory powers are assumptions. No separate circulation power is added when pump 1 provides circulation. An active load rated 0 makes the estimate unavailable. Gaps are not backfilled. Saving does not reconnect.",
+        "description": "Estimate, not a meter. Check your spa's electrical input ratings. Defaults: heater 3000 W, pumps 1300/350 W, separate circulation pump 250 W, each light circuit 10 W, electronics 20 W. Low speed and accessory powers are assumptions. Circulation configuration affects only the estimate, not pump controls. An active load rated 0 makes the estimate unavailable. Gaps are not backfilled. Saving does not reconnect.",
         "data": {
+          "energy_circulation": "Circulation pump configuration",
           "heater_w": "Heater (W)",
           "electronics_w": "Electronics allowance (W)",
           "circulation_w": "Separate circulation pump (W)",
@@ -237,6 +250,10 @@
           "pump5_high_w": "Pump 5, high / single speed (W)",
           "pump6_low_w": "Pump 6, low speed (W)",
           "pump6_high_w": "Pump 6, high / single speed (W)"
+        },
+        "data_description": {
+          "energy_circulation": "Automatic uses unambiguous controller configuration; an unknown configuration makes the estimate unavailable. If pump 1 provides circulation, choose No separate circulation pump. Choose an installed separate pump only after checking your spa's equipment.",
+          "circulation_w": "Used only for a separate circulation pump. Pump 1 circulation uses the Pump 1 low-speed rating instead."
         }
       },
       "init": {

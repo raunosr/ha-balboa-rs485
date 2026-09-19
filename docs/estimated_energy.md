@@ -11,6 +11,22 @@ to the power form. It is off by default. Review the electrical input ratings of
 your equipment, not hydraulic output. Saving does not reconnect. Already accrued
 kWh survive changes of ratings and disabling/re-enabling the estimate.
 
+Choose **Circulation pump configuration** for the estimate:
+
+- **Automatic (controller configuration)** keeps the conservative protocol
+  interpretation. An ambiguous descriptor suspends the estimate.
+- **No separate circulation pump** counts the normal pumps at their observed
+  speeds, without adding a separate circulation load. Use this when Pump 1 LOW
+  provides circulation.
+- **Separate circulation pump installed** counts its configured watts only while
+  the observed circulation flag is on.
+
+The explicit choices describe confirmed physical equipment, not a requested pump
+state. They affect energy accounting only: command admission, pump controls and
+protocol decoding are unchanged. Changing the choice breaks the current accounting
+interval without resetting or recalculating accrued kWh. Existing entries default
+to Automatic. The selector is available from v0.0.22; it is absent from v0.0.21.
+
 | Load | Initial power | Qualification |
 | --- | ---: | --- |
 | Heater | 3000 W | Example installation; adjustable |
@@ -25,8 +41,8 @@ Only installed, observed loads are counted. Pump 1 LOW is **not counted twice**
 as a separate circulation pump. Single-speed pump states use the existing
 normalization. The blower uses one configured rating at every nonzero speed;
 this is a simplifying assumption. Unknown actuator states or circulation
-descriptors suspend accounting. A zero rating on any active load except electronics
-also suspends accounting: zero does not invent a free heater or accessory.
+descriptors in Automatic mode suspend accounting. A zero rating on any active load
+except electronics also suspends accounting: zero does not invent a free heater or accessory.
 Equipment missing from the controller descriptor cannot be included automatically.
 
 Analytical examples, lights off:
@@ -35,6 +51,23 @@ Analytical examples, lights off:
 - Heater + three high-speed pumps + electronics: **6920 W**, **6.92 kWh per hour**.
 
 These are not measured spa results.
+
+### Cello Spa Ounas example
+
+The [Ounas product specification](https://www.k-rauta.fi/tuote/ulkoporeallas-cello-spa-ounas/6438313561033)
+lists one 1.3 kW two-speed pump, two 1.3 kW single-speed pumps and a 3 kW heater.
+The [model's operating manual, pages 12–13](https://docs.keskofiles.com/f/btt/ASSET_PDF_24877486#page=12)
+describes Pump 1 LOW as the filtration speed and Pump 1 circulation for heating.
+For this documented configuration, choose **No separate circulation pump**;
+do not add the default 250 W as another load.
+
+The sources do not specify low-speed electrical input power. The initial 350 W
+remains an assumption, and the published pump ratings should be checked against
+electrical input/nameplate data or a meter. Set the electronics allowance to the
+installation's actual standby allowance; the generic default is not a measurement.
+For example, a 40 W allowance gives 40 W with all observed loads off, 390 W with
+Pump 1 LOW at the assumed 350 W, and 3390 W with a 3000 W heater added. Known idle
+operation would accrue 0.04 kWh per hour even without a water-temperature reading.
 
 ## Entities and Energy Dashboard
 
@@ -47,6 +80,13 @@ must include the kWh entity; it may take a statistics cycle before it is selecta
 Do not account for the same spa twice using another energy integration.
 See [HA sensor metadata](https://developers.home-assistant.io/docs/core/entity/sensor/)
 and [individual device energy](https://www.home-assistant.io/docs/energy/individual-devices/).
+
+Both entities expose `circulation_configuration` and
+`circulation_configuration_required`. If the latter is true, Automatic could not
+resolve the equipment descriptor: verify the spa's equipment and choose the
+appropriate configuration in options. The same fields appear in diagnostics.
+An unavailable estimate is not zero consumption; a stored total of zero with zero
+observed seconds does not prove accounting is working.
 
 ## Gaps, persistence and accuracy
 
@@ -80,6 +120,13 @@ telemetry can cause substantial errors. Weak connections bias totals low. Compar
 against a real meter before relying on accuracy.
 
 ## Verification and scope
+
+The v0.0.22 circulation selector adds regressions for ambiguous descriptors,
+40 W idle accounting, missing temperature, no double counting, unknown-load
+guards, unchanged physical-control semantics, options persistence and interval
+boundaries. Release requires the core, actual HA and HACS checks; the HA suite
+runs on Linux / Python 3.14 / HA 2026.8.3. The execution counts below describe
+v0.0.21, not the additional selector cases.
 
 Analytical tests cover ratings, six pumps, circulation, unknown states, gaps,
 duplicate timestamps, epochs, profile boundaries and restoration. Actual HA tests

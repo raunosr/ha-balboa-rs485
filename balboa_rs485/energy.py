@@ -3,6 +3,7 @@
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Self
 
 from .protocol.messages import HeatState
@@ -25,6 +26,26 @@ DEFAULT_POWERS: dict[str, float] = {
 }
 
 
+class CirculationPump(StrEnum):
+    """Installation knowledge for accounting only, never a physical control policy."""
+
+    AUTO = "auto"
+    ABSENT = "absent"
+    PRESENT = "present"
+
+
+def circulation_pump_present(
+    state: SpaState, configuration: CirculationPump | str = CirculationPump.AUTO
+) -> bool | None:
+    configuration = CirculationPump(configuration)
+    if configuration == CirculationPump.ABSENT:
+        return False
+    if configuration == CirculationPump.PRESENT:
+        return True
+    descriptor = state.configuration.capabilities.frame.payload[3] >> 6
+    return {0: False, 2: True}.get(descriptor)
+
+
 def powers(values: Mapping[str, object]) -> dict[str, float]:
     """Zero accessory rating means unconfigured, not a free active load."""
     result = DEFAULT_POWERS.copy()
@@ -37,8 +58,14 @@ def powers(values: Mapping[str, object]) -> dict[str, float]:
     return result
 
 
-def estimate(state: SpaState, profile: Mapping[str, float]) -> float | None:
+def estimate(
+    state: SpaState,
+    profile: Mapping[str, float],
+    *,
+    circulation: CirculationPump | str = CirculationPump.AUTO,
+) -> float | None:
     """Use normalized observed actuator states, never control intent or water temperature."""
+    dedicated_circulation = circulation_pump_present(state, circulation)
     if state.status.heat_state == HeatState.UNKNOWN:
         return None
     loads = ["electronics_w"]
@@ -53,10 +80,9 @@ def estimate(state: SpaState, profile: Mapping[str, float]) -> float | None:
         if value != PumpState.OFF:
             speed = "low" if value == PumpState.LOW else "high"
             loads.append(f"pump{i}_{speed}_w")
-    circ = state.configuration.capabilities.frame.payload[3] >> 6
-    if circ not in (0, 2):
+    if dedicated_circulation is None:
         return None
-    if circ == 2 and state.status.circulation_pump:
+    if dedicated_circulation and state.status.circulation_pump:
         loads.append("circulation_w")
     for control in (
         Control.LIGHT1,

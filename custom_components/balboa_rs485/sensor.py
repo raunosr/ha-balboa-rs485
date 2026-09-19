@@ -186,6 +186,10 @@ class EstimatedPowerSensor(BalboaEntity, SensorEntity):
     def native_value(self) -> float | None:
         return self.coordinator.energy.watts
 
+    @property
+    def extra_state_attributes(self) -> dict[str, str | bool]:
+        return self.coordinator.energy.configuration_attributes
+
 
 class EstimatedEnergySensor(BalboaEntity, SensorEntity):
     """Durably checkpointed lifetime total; freezes instead of filling telemetry gaps."""
