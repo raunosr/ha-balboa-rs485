@@ -210,13 +210,26 @@
       }
     }
   },
+  "selector": {
+    "energy_circulation": {
+      "options": {
+        "auto": "Automaattinen (ohjaimen tiedot)",
+        "absent": "Ei erillistä kiertovesipumppua",
+        "present": "Erillinen kiertovesipumppu"
+      }
+    }
+  },
   "options": {
-    "error": {"invalid_power": "Syötä äärelliset tehot väliltä 0–25000 W."},
+    "error": {
+      "invalid_power": "Syötä äärelliset tehot väliltä 0–25000 W.",
+      "invalid_circulation": "Valitse kelvollinen kiertovesipumpun kokoonpano."
+    },
     "step": {
       "energy": {
         "title": "Sähkönkulutuksen arvio",
-        "description": "Arvio, ei mittaus. Tarkista oman altaasi sähkötehot. Oletukset: lämmitin 3000 W, pumput 1300/350 W, erillinen kiertovesipumppu 250 W, valopiiri 10 W ja elektroniikka 20 W. Hidas nopeus ja lisälaitteet ovat oletuksia. Erillistä kiertopumppua ei lasketa, jos kierron hoitaa pumppu 1. Aktiivinen laite, jonka teho on 0, keskeyttää arvion. Katkosten kulutusta ei täydennetä. Muutos ei katkaise yhteyttä.",
+        "description": "Arvio, ei mittaus. Tarkista oman altaasi sähkötehot. Oletukset: lämmitin 3000 W, pumput 1300/350 W, erillinen kiertovesipumppu 250 W, valopiiri 10 W ja elektroniikka 20 W. Hidas nopeus ja lisälaitteet ovat oletuksia. Kiertovesipumpun kokoonpano vaikuttaa vain arvioon, ei pumppujen ohjaukseen. Aktiivinen laite, jonka teho on 0, keskeyttää arvion. Katkosten kulutusta ei täydennetä. Muutos ei katkaise yhteyttä.",
         "data": {
+          "energy_circulation": "Kiertovesipumpun kokoonpano",
           "heater_w": "Lämmitin (W)",
           "electronics_w": "Elektroniikan kulutusvara (W)",
           "circulation_w": "Erillinen kiertovesipumppu (W)",
@@ -237,6 +250,10 @@
           "pump5_high_w": "Pumppu 5, suuri / ainoa nopeus (W)",
           "pump6_low_w": "Pumppu 6, hidas nopeus (W)",
           "pump6_high_w": "Pumppu 6, suuri / ainoa nopeus (W)"
+        },
+        "data_description": {
+          "energy_circulation": "Automaattinen käyttää ohjaimen yksiselitteistä kokoonpanotietoa; tuntematon kokoonpano estää arvion. Jos pumppu 1 hoitaa kierron, valitse Ei erillistä kiertovesipumppua. Valitse erillinen pumppu vain altaan varustuksen tarkistamisen jälkeen.",
+          "circulation_w": "Käytetään vain erilliselle kiertovesipumpulle. Pumpun 1 hoitama kierto käyttää sen hitaan nopeuden tehoarvoa."
         }
       },
       "init": {

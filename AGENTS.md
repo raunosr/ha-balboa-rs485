@@ -102,6 +102,12 @@ merge or protection bypass. Record installation privately in
 `.research/energy-0.0.21-deployment.md`; request fresh activation permission.
 See `docs/estimated_energy.md` for limitations and verification.
 
+The 2026-09-19 owner request authorizes committing the energy-only circulation
+configuration fix, a new PR, review, one normal merge after required checks, and
+the v0.0.22 HACS release. The owner will install it. This authorizes no agent-led
+HA installation or restart, automatic merge, protection bypass, or unrelated
+priming/recovery changes.
+
 ### Issue tracker
 
 GitHub Issues in public `raunosr/ha-balboa-rs485`. See `docs/agents/issue-tracker.md`.

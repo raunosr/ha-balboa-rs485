@@ -250,3 +250,23 @@ not implement negotiated channel ownership. Its success cannot validate our ACK
 path. The wiki's finite-allocation warning also invalidates the unproven assumption
 that a rolling retry timer makes unlimited allocation safe. The corresponding
 local draft was rejected before deployment; no bus guards were relaxed.
+
+## Energy-only circulation configuration, 2026-09-19
+
+The pinned Ruby `messages/control_configuration.rb` treats any nonzero high pair
+in BF2E payload byte 3 as circulation-present. Pinned pybalboa
+`client.py::_parse_device_configuration` uses only bit 7. These disagree for
+descriptor 1, including a byte value of `0x50`; it cannot establish a universally
+known dedicated-pump topology.
+
+The [Cello Spa Ounas product specification](https://www.k-rauta.fi/tuote/ulkoporeallas-cello-spa-ounas/6438313561033)
+and its [operating manual, pages 12–13](https://docs.keskofiles.com/f/btt/ASSET_PDF_24877486#page=12)
+document three massage pumps, with Pump 1 providing low-speed filtration and
+heater circulation. This is equipment evidence, not a reason to reinterpret the
+ambiguous descriptor for every BP6013G2 installation.
+
+Energy accounting therefore retains the existing Automatic interpretation and
+offers an explicit user-confirmed separate-pump presence setting. All load states
+still come from received status. No state decoder, physical control guard or
+transport behavior changes. The regression fixture is synthetic and contains no
+controller identity or hardware capture.

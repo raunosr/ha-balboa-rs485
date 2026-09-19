@@ -57,6 +57,67 @@ def test_dedicated_circulation_is_not_pump1_low_twice():
     assert estimate(spa(caps=b"\x16\0\x01\x40\0\0"), powers({})) is None
 
 
+@pytest.mark.parametrize("descriptor", [0x40, 0x50, 0xC0])
+def test_explicit_circulation_configuration_resolves_only_the_ambiguous_load(descriptor):
+    profile = powers({"electronics_w": 40})
+    state = spa(caps=bytes([0x16, 0, 1, descriptor, 0, 0]), circulation_pump=False)
+    assert estimate(state, profile) is None
+    assert estimate(state, profile, circulation="auto") is None
+    assert estimate(state, profile, circulation="absent") == 40
+    assert estimate(state, profile, circulation="present") == 40
+    active = replace(state, status=replace(state.status, circulation_pump=True))
+    assert estimate(active, profile, circulation="absent") == 40
+    assert estimate(active, profile, circulation="present") == 290
+    assert estimate(active, powers({"circulation_w": 0}), circulation="present") is None
+
+
+@pytest.mark.parametrize(
+    "pump,heat,expected",
+    [
+        (0, HeatState.OFF, 40),
+        (1, HeatState.OFF, 390),
+        (1, HeatState.HEATING, 3390),
+        (0x2A, HeatState.HEATING, 6940),
+    ],
+)
+def test_shared_pump_circulation_uses_observed_loads_once(pump, heat, expected):
+    state = spa(
+        caps=b"\x16\0\x01\x50\0\0",
+        pump=pump,
+        heat=heat,
+        circulation_pump=True,
+        current_temperature=None,
+    )
+    assert estimate(state, powers({"electronics_w": 40}), circulation="absent") == expected
+    assert not state.has_circulation_pump
+    assert not state.pump1_is_circulation  # An accounting option does not change control policy.
+
+
+def test_explicit_circulation_keeps_unknown_actuator_and_zero_power_guards():
+    profile = powers({"electronics_w": 40})
+    assert estimate(spa(heat=HeatState.UNKNOWN), profile, circulation="absent") is None
+    assert estimate(spa(pump=3), profile, circulation="absent") is None
+    state = spa(heat=HeatState.HEATING)
+    assert estimate(state, powers({"heater_w": 0}), circulation="absent") is None
+
+
+def test_configured_idle_load_accrues_energy_without_a_temperature_reading():
+    state = spa(caps=b"\x16\0\x01\x50\0\0", current_temperature=None)
+    profile = powers({"electronics_w": 40})
+    counter = EnergyCounter()
+    for second in range(3601):
+        counter.sample(second, estimate(state, profile, circulation="absent"), 1)
+    assert counter.kwh == pytest.approx(0.04)
+    assert counter.known_seconds == 3600
+    assert counter.unknown_seconds == 0
+
+
+@pytest.mark.parametrize("value", ["invalid", True, 1, None])
+def test_invalid_circulation_configuration_is_rejected(value):
+    with pytest.raises(ValueError):
+        estimate(spa(), powers({}), circulation=value)
+
+
 def test_all_six_pump_ratings_and_unknown_states():
     state = spa(caps=b"\xaa\x82\x01\0\0\0", pumps_raw=(1, 2, 1, 2, 1, 2))
     assert estimate(state, powers({})) == 20 + 3 * 350 + 3 * 1300

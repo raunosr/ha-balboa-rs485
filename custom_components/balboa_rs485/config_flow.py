@@ -8,13 +8,14 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from ._core.energy import DEFAULT_POWERS, powers
+from ._core.energy import DEFAULT_POWERS, CirculationPump, powers
 from ._core.transport.connection import SpaConnection
 from ._core.transport.policy import Mode
 from .const import (
     CONF_CONTROLS,
     CONF_DIRECT_RISK,
     CONF_ENERGY,
+    CONF_ENERGY_CIRCULATION,
     CONF_ENERGY_POWERS,
     CONF_FALLBACK,
     CONF_MODE,
@@ -167,24 +168,48 @@ class BalboaOptionsFlow(OptionsFlow):
 
     async def async_step_energy(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors = {}
-        if user_input is not None:
-            try:
-                profile = powers(user_input)
-            except ValueError:
-                errors["base"] = "invalid_power"
-            else:
-                return self.async_create_entry(
-                    data={**self._pending_options, CONF_ENERGY_POWERS: profile}
-                )
+        circulation = self.config_entry.options.get(
+            CONF_ENERGY_CIRCULATION, CirculationPump.AUTO.value
+        )
         defaults = {**DEFAULT_POWERS, **self.config_entry.options.get(CONF_ENERGY_POWERS, {})}
+        if user_input is not None:
+            ratings = {**defaults, **user_input}
+            try:
+                circulation = CirculationPump(ratings.pop(CONF_ENERGY_CIRCULATION, circulation))
+            except (ValueError, TypeError):
+                errors[CONF_ENERGY_CIRCULATION] = "invalid_circulation"
+            else:
+                try:
+                    profile = powers(ratings)
+                except ValueError:
+                    errors["base"] = "invalid_power"
+                else:
+                    return self.async_create_entry(
+                        data={
+                            **self._pending_options,
+                            CONF_ENERGY_POWERS: profile,
+                            CONF_ENERGY_CIRCULATION: circulation.value,
+                        }
+                    )
         return self.async_show_form(
             step_id="energy",
             data_schema=vol.Schema(
                 {
-                    vol.Required(key, default=value): vol.All(
-                        vol.Coerce(float), vol.Range(min=0, max=25000)
-                    )
-                    for key, value in defaults.items()
+                    vol.Required(
+                        CONF_ENERGY_CIRCULATION, default=circulation
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=[choice.value for choice in CirculationPump],
+                            mode=selector.SelectSelectorMode.DROPDOWN,
+                            translation_key=CONF_ENERGY_CIRCULATION,
+                        )
+                    ),
+                    **{
+                        vol.Required(key, default=value): vol.All(
+                            vol.Coerce(float), vol.Range(min=0, max=25000)
+                        )
+                        for key, value in defaults.items()
+                    },
                 }
             ),
             errors=errors,
